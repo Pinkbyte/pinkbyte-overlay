@@ -1,0 +1,36 @@
+diff -purN kdeplasma-addons-4.6.0-orig//applets/CMakeLists.txt kdeplasma-addons-4.6.0/applets/CMakeLists.txt
+--- kdeplasma-addons-4.6.0-orig//applets/CMakeLists.txt	2011-02-11 17:25:19.576723309 +0200
++++ kdeplasma-addons-4.6.0/applets/CMakeLists.txt	2011-02-11 17:25:43.724708635 +0200
+@@ -77,7 +77,6 @@ endif( Qwt5-Qt4_FOUND )
+ 
+ if(NOT WIN32)
+   if(KDE4WORKSPACE_FOUND)
+-    add_subdirectory(lancelot)
+   endif(KDE4WORKSPACE_FOUND)
+   add_subdirectory(incomingmsg)
+   add_subdirectory(leavenote)
+diff -purN kdeplasma-addons-4.6.0-orig//libs/CMakeLists.txt kdeplasma-addons-4.6.0/libs/CMakeLists.txt
+--- kdeplasma-addons-4.6.0-orig//libs/CMakeLists.txt	2011-02-11 17:25:19.590725043 +0200
++++ kdeplasma-addons-4.6.0/libs/CMakeLists.txt	2011-02-11 17:25:33.049389764 +0200
+@@ -1,9 +1,7 @@
+ 
+ add_subdirectory(plasmaweather)
+ add_subdirectory(rtm)
+-add_subdirectory(lancelot)
+ 
+ if(NOT WIN32 AND KDE4WORKSPACE_FOUND)
+-   add_subdirectory(lancelot-datamodels)
+ endif(NOT WIN32 AND KDE4WORKSPACE_FOUND)
+ 
+diff -purN kdeplasma-addons-4.6.0-orig//runners/CMakeLists.txt kdeplasma-addons-4.6.0/runners/CMakeLists.txt
+--- kdeplasma-addons-4.6.0-orig//runners/CMakeLists.txt	2011-02-11 17:25:19.570722582 +0200
++++ kdeplasma-addons-4.6.0/runners/CMakeLists.txt	2011-02-11 17:26:21.888412339 +0200
+@@ -10,8 +10,6 @@ add_subdirectory(spellchecker)
+ add_subdirectory(characters)
+ 
+ if(KDEPIMLIBS_FOUND)
+-add_subdirectory(contacts)
+-add_subdirectory(events)
+ endif(KDEPIMLIBS_FOUND)
+ 
+ if(NOT WIN32)
