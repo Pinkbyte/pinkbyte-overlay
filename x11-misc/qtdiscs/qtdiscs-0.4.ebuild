@@ -3,19 +3,10 @@
 
 EAPI=4
 
-if [[ ${PV} == 9999* ]]
-then
-        inherit qt4-r2 git-2 eutils
-        EGIT_REPO_URI="git://github.com/Pinkbyte/qtdiscs.git"
-        EGIT_BRANCH=master
-        SRC_URI=""
-        KEYWORDS=""
-else
-	inherit qt4-r2 eutils
-	SRC_URI="https://github.com/Pinkbyte/qtdiscs/tarball/0.2 -> ${P}.tar.gz"
-        KEYWORDS="~amd64 ~x86"
-	S="${WORKDIR}/Pinkbyte-qtdiscs-1ba0feb"
-fi
+inherit qt4-r2 eutils
+SRC_URI="https://github.com/Pinkbyte/qtdiscs/tarball/${PV} -> ${P}.tar.gz"
+KEYWORDS="~amd64 ~x86"
+S="${WORKDIR}/Pinkbyte-qtdiscs-1869819"
 
 DESCRIPTION="QtDiscs is a little program to show information about CD and DVD discs collection"
 HOMEPAGE="http://github.com/Pinkbyte/qtdiscs"
