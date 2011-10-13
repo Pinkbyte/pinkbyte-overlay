@@ -22,7 +22,7 @@ IUSE=""
 
 DEPEND="
 		>=sys-devel/spl-${PV}
-		>=virtual/linux-sources-2.6
+		virtual/linux-sources
 		"
 RDEPEND="
 		!sys-fs/zfs-fuse
