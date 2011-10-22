@@ -14,11 +14,11 @@ KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86
 IUSE="ipv6 readline selinux tcpd"
 
 RDEPEND="selinux? ( sec-policy/selinux-tftpd )
-	!virtual/tftp"
+	!net-ftp/atftp
+	!net-ftp/netkit-tftp"
 DEPEND="${RDEPEND}
 	readline? ( sys-libs/readline )
 	tcpd? ( sys-apps/tcp-wrappers )"
-PROVIDE="virtual/tftp"
 
 src_compile() {
 	# additional patch for Windows clients
