@@ -4,7 +4,7 @@
 
 EAPI=2
 
-inherit autotools
+inherit autotools eutils
 
 DESCRIPTION="In-place conversion of text typed in with a wrong keyboard layout (Punto Switcher replacement)"
 HOMEPAGE="http://www.xneur.ru/"

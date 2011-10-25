@@ -18,7 +18,8 @@ IUSE="nls"
 COMMON_DEPEND=">=gnome-base/libglade-2.6.0
 	>=sys-devel/gettext-0.16.1
 	>=x11-libs/gtk+-2.18:2
-	>=x11-misc/xneur-$(get_version_component_range 1-2)"
+	>=x11-misc/xneur-$(get_version_component_range 1-2)
+	>=gnome-base/gconf-2.0"
 RDEPEND="${COMMON_DEPEND}
 	nls? ( virtual/libintl )"
 DEPEND="${COMMON_DEPEND}
