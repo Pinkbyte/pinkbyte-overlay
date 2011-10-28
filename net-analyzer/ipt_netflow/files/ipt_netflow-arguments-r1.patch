@@ -1,0 +1,389 @@
+--- ipt_NETFLOW.c.orig	2011-05-14 14:53:49.000000000 +0300
++++ ipt_NETFLOW.c	2011-05-14 14:59:51.000000000 +0300
+@@ -27,6 +27,7 @@
+ #include <linux/version.h>
+ #include <asm/unaligned.h>
+ #include "ipt_NETFLOW.h"
++#include "libipt_NETFLOW.h"
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ #include <linux/netfilter_bridge.h>
+ #endif
+@@ -962,6 +963,20 @@
+ 	pdu_traf = 0;
+ }
+ 
++__u32 __netflow_get_as(const enum ipt_netflow_flags f,const struct ipt_netflow *nf)
++{
++    __u32 ret=0;
++    switch(f){
++       case NETFLOW_CLASS:     ret=nf->priority;break;
++       case NETFLOW_FWMARK:    ret=nf->fwmark;break;
++#ifdef CONFIG_NETWORK_SECMARK
++       case NETFLOW_SECMARK:   ret=nf->secmark;break;
++#endif
++       default:                ret=~0;break;
++    }
++    return ret;
++}
++
+ static void netflow_export_flow(struct ipt_netflow *nf)
+ {
+ 	struct netflow5_record *rec;
+@@ -991,10 +1006,29 @@
+ 	rec->tcp_flags	= nf->tcp_flags;
+ 	rec->protocol	= nf->tuple.protocol;
+ 	rec->tos	= nf->tuple.tos;
+-	//rec->s_as	= 0;
+-	//rec->d_as	= 0;
+ 	rec->s_mask	= nf->s_mask;
+ 	rec->d_mask	= nf->d_mask;
++
++       if (nf->info){
++           const struct ipt_netflow_info* nfi= (const struct ipt_netflow_info* ) nf->info;
++           __u16       as_src=0;
++           __u16       as_dst=0;
++           if (nfi->flags & NETFLOW_AS_SRC)
++               as_src = nfi->as_src;
++           else
++               as_src = __netflow_get_as(nfi->as_src,nf)>>16;
++
++           if (nfi->flags & NETFLOW_AS_DST)
++               as_dst = nfi->as_dst;
++           else
++               as_dst = __netflow_get_as(nfi->as_dst,nf);
++           rec->s_as   = htons(as_src);
++           rec->d_as   = htons(as_dst);
++       }else{
++           rec->s_as = 0;
++           rec->d_as = 0;
++       }
++	
+ 	//rec->padding	= 0;
+ 	ipt_netflow_free(nf);
+ 
+@@ -1119,6 +1153,31 @@
+ 	mod_timer(&rate_timer, jiffies + (HZ * SAMPLERATE));
+ }
+ 
++/*
++static int netflow_check(const struct xt_tgchk_param *target)
++{
++}
++*/
++
++static void netflow_destroy(const struct xt_tgdtor_param *target)
++{
++       __u8 found=0;
++       spin_lock_bh(&ipt_netflow_lock);
++       while (!list_empty(&ipt_netflow_list)) {
++               struct ipt_netflow *nf;
++
++               nf = list_entry(ipt_netflow_list.prev, struct ipt_netflow, list);
++               if (nf->info != target->targinfo) continue;
++               if (nf->info->flags)
++                   found++;
++               else
++                   nf->info=NULL;
++       }
++       spin_unlock_bh(&ipt_netflow_lock);
++       if (found)
++           netflow_scan_inactive_timeout(0);
++}
++
+ /* packet receiver */
+ static unsigned int netflow_target(
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24)
+@@ -1285,6 +1344,9 @@
+ 		nf->s_mask = s_mask;
+ 		nf->d_mask = d_mask;
+ 
++                ///     @BRIEF  save our internal pointer
++                nf->info = (const struct ipt_netflow_info*) par->targinfo;
++
+ 		if (debug > 2)
+ 			printk(KERN_INFO "ipt_netflow: new (%u) %hd:%hd SRC=%u.%u.%u.%u:%u DST=%u.%u.%u.%u:%u\n",
+ 			       atomic_read(&ipt_netflow_count),
+@@ -1303,6 +1365,12 @@
+ 	nf->ts_last = jiffies;
+ 	nf->tcp_flags |= tcp_flags;
+ 
++       nf->priority = skb->priority;
++       nf->fwmark = skb->mark;
++#ifdef CONFIG_NETWORK_SECMARK
++       nf->secmark = skb->secmark;
++#endif
++
+ 	NETFLOW_STAT_INC(pkt_total);
+ 	NETFLOW_STAT_ADD(traf_total, ntohs(iph->tot_len));
+ 
+@@ -1326,6 +1394,9 @@
+ static struct ipt_target ipt_netflow_reg = {
+ 	.name		= "NETFLOW",
+ 	.target		= netflow_target,
++//      .checkentry     = netflow_check,
++        .destroy        = netflow_destroy,
++        .targetsize     = sizeof(struct ipt_netflow_info),
+ 	.family		= AF_INET,
+ #ifndef RAW_PROMISC_HACK
+ 	.table		= "filter",
+--- ipt_NETFLOW.h.orig	2011-05-14 15:00:40.000000000 +0300
++++ ipt_NETFLOW.h	2011-05-14 15:01:40.000000000 +0300
+@@ -83,6 +83,13 @@
+ 	unsigned long	ts_first;
+ 	unsigned long	ts_last;
+ 	__u8		tcp_flags; /* `OR' of all tcp flags */
++
++#ifdef CONFIG_NETWORK_SECMARK
++       __u32           secmark;
++#endif
++       __u32           fwmark;
++       __u32           priority;
++       const struct ipt_netflow_info *info;
+ };
+ 
+ static inline int ipt_netflow_tuple_equal(const struct ipt_netflow_tuple *t1,
+--- libipt_NETFLOW.c.orig	2011-05-14 15:01:57.000000000 +0300
++++ libipt_NETFLOW.c	2011-05-14 15:09:11.000000000 +0300
+@@ -17,6 +17,8 @@
+ #include <iptables.h>
+ #endif
+ 
++#include "libipt_NETFLOW.h"
++
+ #ifdef XTABLES_VERSION_CODE	// since 1.4.1
+ #define MOD140
+ #define iptables_target         xtables_target
+@@ -39,40 +41,177 @@
+ #define _IPT_IP struct ipt_ip
+ #endif
+ 
+-static struct option opts[] = {
+-  {0}
++static struct option NETFLOW_opts[] = {
++    {"netflow-collector",      1,      NULL,   NETFLOW_COLLECTOR},
++    {"netflow-class",          1,      NULL,   NETFLOW_CLASS},
++    {"netflow-fwmark",         1,      NULL,   NETFLOW_FWMARK},
++    {"netflow-secmark",                1,      NULL,   NETFLOW_SECMARK},
++    {"netflow-src-as",         1,      NULL,   NETFLOW_AS_SRC},
++    {"netflow-dst-as",         1,      NULL,   NETFLOW_AS_DST},
++    {0}
+ };
+ 
+-static void help(void)
++static void NETFLOW_help(void)
++{
++       printf( "NETFLOW target:\n"
++               "--netflow-collector    \"ip:port[,ip:port....]\"               where to send theese netflows...\n"
++               "--netflow-class        src | dst | full                        AS source and/or destination is QDISC/CLASS\n"
++               "--netflow-fwmark       src | dst | full                        AS source and/or destination is FWMARK\n"
++               "--netflow-secmark      src | dst | full                        AS source and/or destination is SECMARK\n"
++               "--netflow-src-as       ID16                                    AS source will be filled with this ID\n"
++               "--netflow-dst-as       ID16                                    AS destination  will be filled with this ID\n"
++               "\n"
++       );
++}
++
++static void NETFLOW_init(struct ipt_entry_target *t)
+ {
+-	printf( "NETFLOW target\n");
++    struct ipt_netflow_info *nf= (struct ipt_netflow_info*) t->data;
++    nf->flags  = 0;
++    nf->as_src = 0;
++    nf->as_dst = 0;
+ }
+ 
+ //static int parse(int c, char **argv, int invert, unsigned int *flags,
+ //      const _IPT_ENTRY *entry,
+ //      struct ipt_entry_target **target)
+-static int parse(int c, char **argv, int invert, unsigned int *flags,
++static int NETFLOW_parse(int c, char **argv, int invert, unsigned int *flags,
+ 	     const _IPT_ENTRY  *entry,
+ 	     struct ipt_entry_target **targetinfo)
++{
++    struct ipt_netflow_info *nf= (struct ipt_netflow_info*) (*targetinfo)->data;
++    const char *opt=argv[optind];
++
++    xtables_param_act(XTF_ONLY_ONCE, "NETFLOW", opt, *flags & c);
++    xtables_param_act(XTF_NO_INVERT, "NETFLOW", opt, invert);
+ 
++    opt=optarg;
++
++    switch(c) {
++       case NETFLOW_COLLECTOR: break;
++       case NETFLOW_CLASS:
++       case NETFLOW_FWMARK:
++       case NETFLOW_SECMARK:
++                               if ( !opt || strlen(opt) == 0 )
++                                   xtables_error(PARAMETER_PROBLEM,"Where do I store this?");
++                               if      ( strcmp(opt,"full")==0 ){
++                                   if (nf->as_src | nf->as_dst)
++                                       xtables_error(PARAMETER_PROBLEM, "One of fields is already used");
++                                   nf->as_src |= c;
++                                   nf->as_dst |= c;
++                               }else if( strcmp(opt,"src")==0){
++                                   if (nf->as_src)
++                                       xtables_error(PARAMETER_PROBLEM, "AS_SRC field already used");
++                                   nf->as_src |= c;
++                               }else if( strcmp(opt,"dst")==0){
++                                   if (nf->as_dst)
++                                       xtables_error(PARAMETER_PROBLEM, "AS_DST field already used");
++                                   nf->as_dst |= c;
++                               }else
++                                   xtables_error(PARAMETER_PROBLEM, "Unsupported mode %s (valid ones: src, dst, full)",opt);
++                               break;
++       case NETFLOW_AS_SRC:
++       case NETFLOW_AS_DST:
++                               if ( !opt || strlen(opt)==0)
++                                   xtables_error(PARAMETER_PROBLEM, "No AS number provided");
++                               __u16 *as=NULL;
++                               if (c==NETFLOW_AS_SRC)
++                                   as=&nf->as_src;
++                               else
++                                   as=&nf->as_dst;
++                               if (*as)
++                                   xtables_error(PARAMETER_PROBLEM, "AS field already in use");
++
++                               if (! (*as=atoi(optarg)))
++                                   xtables_error(PARAMETER_PROBLEM, "AS not number or zero");
++                               break;
++       default:                return 0;
++                               break;
++    }
++    nf->flags  |= c;
++    *flags     |= c;
++    return 1;
++}
++
++static void NETFLOW_check(unsigned int flags)
+ {
++    if (flags & NETFLOW_COLLECTOR)
++       xtables_error(PARAMETER_PROBLEM, "Collector address for now is unsupported");
++}
+ 
+-	return 1;
++void check_field(short mode,const struct ipt_netflow_info *nf, const enum ipt_netflow_flags f)
++{
++       if      (mode == 3 && nf->as_src & f && nf->as_dst & f)
++           printf("full ");
++       else if (mode & 1 && nf->as_src & f)
++           printf("src ");
++       else if (mode & 2 && nf->as_dst & f)
++           printf("dst ");
++       else
++           printf("ERROR ");
+ }
+ 
+-static void final_check(unsigned int flags)
++static void NETFLOW_save(const _IPT_IP *ip, const struct ipt_entry_target *target)
+ {
++    const struct ipt_netflow_info *nf = (const struct ipt_netflow_info*) target->data;
++
++    __u8 mode=3;
++    if (nf->flags & NETFLOW_AS_SRC){
++       printf("--netflow-src-as %u ", nf->as_src);
++       mode &= ~1;
++    }
++    if (nf->flags & NETFLOW_AS_DST){
++       printf("--netflow-dst-as %u ", nf->as_dst);
++       mode &= ~2;
++    }
++    if (nf->flags & NETFLOW_CLASS){
++       printf("--netflow-class ");
++       check_field(mode,nf,NETFLOW_CLASS);
++    }
++    if (nf->flags & NETFLOW_FWMARK){
++       printf("--netflow-fwmark ");
++       check_field(mode,nf,NETFLOW_FWMARK);
++    }
++    if (nf->flags & NETFLOW_SECMARK){
++       printf("--netflow-secmark ");
++       check_field(mode,nf,NETFLOW_SECMARK);
++    }
+ }
+ 
+-static void save(const _IPT_IP *ip, const struct ipt_entry_target *match)
++void check_print(const enum ipt_netflow_flags f)
+ {
++    switch(f){
++       case 0:                 printf("UNUSED ");break;
++       case NETFLOW_CLASS:     printf("class ");break;
++       case NETFLOW_FWMARK:    printf("fwmark ");break;
++       case NETFLOW_SECMARK:   printf("secmark ");break;
++       default:                printf("unknown(%0x) ",f);break;
++    }
+ }
+ 
+-static void print(const _IPT_IP *ip,
++static void NETFLOW_print(const _IPT_IP *ip,
+       const struct ipt_entry_target *target,
+       int numeric)
+ {
++       const struct ipt_netflow_info *nf = (const struct ipt_netflow_info*) target->data;
+ 	printf("NETFLOW ");
++       if (! nf->flags)
++           return;
++       printf("AS: ");
++       if      (nf->flags & NETFLOW_AS_SRC && nf->flags & NETFLOW_AS_DST)
++           printf("AS%u ",(__u32) (nf->as_src<<16)+nf->as_dst);
++       else if (nf->flags & NETFLOW_AS_SRC){
++           printf("AS%u ",nf->as_src);
++           check_print(nf->as_dst);
++       }else if(nf->flags & NETFLOW_AS_DST){
++           check_print(nf->as_src);
++           printf("AS%u ",nf->as_dst);
++       }else if(nf->as_src==nf->as_dst)
++           check_print(nf->flags);
++       else{
++           check_print(nf->as_src);
++           check_print(nf->as_dst);
++       }
+ }
+ 
+ static struct iptables_target netflow = { 
+@@ -86,14 +225,15 @@
+ #else
+ 	.version	= IPTABLES_VERSION,
+ #endif
+-	.size           = IPT_ALIGN(0),
+-	.userspacesize  = IPT_ALIGN(0),
+-	.help		= &help,
+-	.parse		= &parse,
+-	.final_check    = &final_check,
+-	.print		= &print,
+-	.save		= &save,
+-	.extra_opts     = opts
++       .size           = IPT_ALIGN(sizeof(struct ipt_netflow_info)),
++       .userspacesize  = IPT_ALIGN(sizeof(struct ipt_netflow_info)),
++       .help           = NETFLOW_help,
++       .init           = NETFLOW_init,
++       .parse          = NETFLOW_parse,
++       .final_check    = NETFLOW_check,
++       .print          = NETFLOW_print,
++       .save           = NETFLOW_save,
++       .extra_opts     = NETFLOW_opts
+ };
+ 
+ #ifndef _init
+--- libipt_NETFLOW.h.orig	1970-01-01 03:00:00.000000000 +0300
++++ libipt_NETFLOW.h	2011-05-14 15:10:12.000000000 +0300
+@@ -0,0 +1,20 @@
++#ifndef _LIBIP_NETFLOW_H
++#define _LIBIP_NETFLOW_H
++
++enum ipt_netflow_flags {
++    NETFLOW_COLLECTOR          = 0x01,
++    NETFLOW_FWMARK             = 0x02,
++    NETFLOW_SECMARK            = 0x04,
++    NETFLOW_CLASS              = 0x08,
++    NETFLOW_AS_SRC             = 0x10,
++    NETFLOW_AS_DST             = 0x20,
++};
++
++struct ipt_netflow_info {
++    __u8                       flags;
++    __u16                      as_src;
++    __u16                      as_dst;
++};
++
++#endif
++/* vim: set sw=8: */
