@@ -1,0 +1,74 @@
+#!/sbin/runscript
+# Copyright 1999-2005 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+checkconfig() {
+        if [ ! -f /etc/conf.d/utm5_rfw.conf ] ; then
+                eerror "You will need an /etc/conf.d/utm5_rfw.conf."
+                return 1
+        fi
+
+	. /etc/conf.d/utm5_rfw.conf
+	
+	# Checking for valid shell for supplied user.
+	SHELL=`grep ^$USERNAME: /etc/passwd | awk -F : '{print $7}'`
+	if [ -z "$SHELL" ] ; then
+		eerror "Supply user with valid shell in /etc/conf.d/utm5_rfw.conf."
+		return 1
+	fi
+
+	# This is durty and assumes that shell is in /bin directory. But in most cases this is true.
+	shell_exist=false
+	rm -f /tmp/tmp.shells ; grep "^/bin/" /etc/shells > /tmp/tmp.shells
+	
+	while read shell
+	do
+		if [ "$shell" = "$SHELL" ] ; then
+			shell_exist=true
+		fi
+	done < /tmp/tmp.shells
+	
+	if [ "$shell_exist" = "false" ] ; then
+		eerror "Supply user with a valid shell in /etc/conf.d/utm5_rfw.conf."
+		return 1
+	fi
+
+	if [ "$shell_exist" = "true" ] ; then
+		return 0
+	fi
+
+	eerror Init script error? Please submit a report at support@netup.ru.
+}
+
+start() {
+        checkconfig || return 1
+	ebegin "Starting utm5_rfw"
+	. /etc/conf.d/utm5_rfw.conf
+	
+	if [ -z "$GROUPNAME" ] ; then
+		GROUPID=`grep ^$USERNAME: /etc/passwd | awk -F : '{print $4}'`
+		GROUPNAME=`grep :$GROUPID: /etc/group | awk -F : '{print $1}'`
+	fi
+	
+	LOG_FILENAME=`grep "log_file_main" /etc/utm5/rfw5.cfg | grep "=" | awk -F= '{print $2}'`
+	if [ ! -f $LOG_FILENAME ] ; then
+		mkdir -p `dirname $LOG_FILENAME`
+		touch $LOG_FILENAME
+		chown $USERNAME:$GROUPNAME $LOG_FILENAME
+	fi
+
+	# Checking the possibility to write in log file.
+	if ! `/bin/su $USERNAME -c "/bin/echo \">>>\" \`date\` Starting utm5_rfw. >> $LOG_FILENAME"`
+	then
+		eerror "Can not write into  $LOG_FILENAME. Please check permitions."
+	fi
+	/bin/su $USERNAME -c "/netup/utm5/bin/utm5_rfw $ARGS -c /etc/utm5/rfw5.cfg >> $LOG_FILENAME 2>&1 &"
+	eend $?
+}
+
+stop() {	
+	ebegin "Stopping utm5_rfw"
+	killall -s 9 utm5_rfw
+	eend $?
+}

@@ -1,0 +1,17 @@
+# Copyright 1999-2005 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+*utm5-1.10.009 (07 Mar 2005)
+  
+  07 Mar 2005; Peter Volkov <pvolkov@mics.msu.su> utm5-1.10.009.ebuild:
+
+  The begining.
+  
+  Added initial ChangeLog which should be updated whenever the package is
+  updated in any way. This changelog is targetted to users. This means that
+  the comments should well explained and written in clean English. The
+  details about writing correct changelogs are explained in the
+  skel.ChangeLog file which you can find in the root directory of the
+  portage repository.
+	    

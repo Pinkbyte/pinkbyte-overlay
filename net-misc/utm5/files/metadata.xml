@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+<herd>no-herd</herd>
+<maintainer>
+  <email>info@netup.ru</email>
+<description>NetUP Inc</description>
+</maintainer>
+<longdescription>UTM5 billing system, see www.netup.ru for details.</longdescription>
+</pkgmetadata>

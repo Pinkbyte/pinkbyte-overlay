@@ -1,0 +1,16 @@
+#!/sbin/runscript
+# Copyright 1999-2004 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+start() {
+	ebegin "Starting utm5_radius"
+	start-stop-daemon --start --quiet --background --exec /netup/utm5/bin/safe_utm5_radius -- start
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping utm5_radius"
+	start-stop-daemon --start --quiet --exec /netup/utm5/bin/safe_utm5_radius -- stop
+	eend $?
+}
