@@ -38,7 +38,6 @@ src_prepare() {
 	sed -i 's:gcc -O2:$(CC) $(LDFLAGS) $(CFLAGS):' Makefile.in || die "sed failed!"
 	sed -i 's:gcc:$(CC) $(LDFLAGS) $(CFLAGS):' Makefile.in || die "sed failed!"
 	cp "${S}"/Makefile{.in,}
-	epatch ${FILESDIR}/ipt_netflow-arguments-r1.patch
 }
 
 src_configure() {
