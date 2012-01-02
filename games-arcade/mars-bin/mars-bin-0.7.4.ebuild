@@ -16,7 +16,7 @@ SRC_URI="mirror://sourceforge/mars-game/mars_linux_${PV}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~x86"
 IUSE=""
 S="${WORKDIR}/mars_linux_${PV}"
 RESTRICT="strip"
@@ -26,7 +26,7 @@ RDEPEND="virtual/opengl
 	media-libs/flac
 	media-libs/freetype
 	media-libs/glew
-	media-libs/jpeg:62
+	virtual/jpeg
 	media-libs/openal
 	media-libs/libogg
 	media-libs/libsndfile
@@ -49,17 +49,20 @@ src_install() {
 	if use amd64; then
 		mv "${S}/lib64" "${S}/lib" || die
 		mv "${S}/marsshooter64" "${S}/${PN}.bin" || die
+		insinto "/usr/share/${PN}/lib"
+		doins "${FILESDIR}/libGLEW.so.1.5"
+		insinto "/usr/share/${PN}"
 	else
-		mv "${S}/lib64" "${S}/lib" || die
-		mv "${S}/marsshooter64" "${S}/${PN}.bin" || die
+		mv "${S}/lib32" "${S}/lib" || die
+		mv "${S}/marsshooter32" "${S}/${PN}.bin" || die
 	fi
 	doexe "${S}/${PN}.bin" || die
 	doins -r "${S}/lib"
 	echo "MARS_LIBRARY_PATH=\"/usr/share/${PN}/lib\"" > "${S}/99-mars-bin"
 	doenvd "${S}/99-mars-bin"
 
-#	exeinto /usr/bin
-#	doexe "${FILESDIR}/${PN}" || die
+	exeinto /usr/bin
+	doexe "${FILESDIR}/${PN}" || die
 
 	mv "${S}/data/tex/icon.png" "${S}/${PN}.png" || die
 	doicon "${S}/${PN}.png" || die
