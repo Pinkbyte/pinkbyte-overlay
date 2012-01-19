@@ -45,7 +45,7 @@ pkg_setup() {
 
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-skip-locktest.patch
-	epatch "${FILESDIR}"/${PN}-motorola-l7-features.patch.patch
+	epatch "${FILESDIR}"/${PN}-motorola-l7-features.patch
 
 	local lang support_linguas=no
 	for lang in ${MY_AVAILABLE_LINGUAS} ; do
