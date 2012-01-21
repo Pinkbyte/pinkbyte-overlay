@@ -32,8 +32,8 @@ src_configure() {
 	set_arch_to_kernel
 	econf \
 		--with-config=all \
-		--with-linux="${KERNEL_DIR}" \
-		--with-linux-obj="${KERNEL_DIR}"
+		--with-linux="${KV_OUT_DIR}" \
+		--with-linux-obj="${KV_OUT_DIR}"
 }
 
 src_install() {
