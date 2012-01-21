@@ -7,12 +7,12 @@ EAPI="2"
 WANT_AUTOMAKE="1.11"
 AT_M4DIR=./config  # for aclocal called by eautoreconf
 
-EGIT_REPO_URI="http://github.com/behlendorf/zfs.git"
+EGIT_REPO_URI="http://github.com/zfsonlinux/zfs.git"
 
 inherit autotools eutils git-2 linux-mod
 
 DESCRIPTION="Native ZFS for Linux"
-HOMEPAGE="http://wiki.github.com/behlendorf/zfs/"
+HOMEPAGE="http://zfsonlinux.org/"
 SRC_URI=""
 
 LICENSE="CDDL GPL-2"
@@ -34,7 +34,7 @@ pkg_setup() {
 	linux_config_exists || die "Your kernel sources are unconfigured."
 	if linux_chkconfig_present PREEMPT; then
 		eerror "${CATEGORY}/${PN} doesn't currently work with PREEMPT kernel."
-		eerror "Please look at bug https://github.com/behlendorf/zfs/issues/83"
+		eerror "Please look at bug https://github.com/zfsonlinux/zfs/issues/83"
 		die "PREEMPT kernel"
 	fi
 }

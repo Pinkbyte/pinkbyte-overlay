@@ -33,7 +33,7 @@ pkg_setup() {
 	linux_config_exists || die "Your kernel sources are unconfigured."
 	if linux_chkconfig_present PREEMPT; then
 		eerror "${CATEGORY}/${PN} doesn't currently work with PREEMPT kernel."
-		eerror "Please look at bug https://github.com/behlendorf/zfs/issues/83"
+		eerror "Please look at bug https://github.com/zfsonlinux/zfs/issues/83"
 		die "PREEMPT kernel"
 	fi
 }
