@@ -1,0 +1,581 @@
+diff --git a/config/kernel-fsync.m4 b/config/kernel-fsync.m4
+index 3f93842..862b897 100644
+--- a/config/kernel-fsync.m4
++++ b/config/kernel-fsync.m4
+@@ -1,20 +1,63 @@
+ dnl #
+-dnl # 2.6.35 API change
+-dnl # The dentry argument was deamed unused and dropped in 2.6.36.
++dnl # Linux 2.6.x - 2.6.34 API
+ dnl #
+-AC_DEFUN([ZFS_AC_KERNEL_FSYNC_2ARGS], [
+-	AC_MSG_CHECKING([whether fops->fsync() wants 2 args])
++AC_DEFUN([ZFS_AC_KERNEL_FSYNC_WITH_DENTRY], [
+ 	ZFS_LINUX_TRY_COMPILE([
+ 		#include <linux/fs.h>
+ 	],[
+-		int (*fsync) (struct file *, int datasync) = NULL;
++		int (*fsync) (struct file *, struct dentry *, int) = NULL;
+ 		struct file_operations fops __attribute__ ((unused));
+ 
+ 		fops.fsync = fsync;
+ 	],[
+-		AC_MSG_RESULT(yes)
+-		AC_DEFINE(HAVE_2ARGS_FSYNC, 1, [fops->fsync() want 2 args])
++		AC_MSG_RESULT([dentry])
++		AC_DEFINE(HAVE_FSYNC_WITH_DENTRY, 1,
++			[fops->fsync() with dentry])
+ 	],[
+-		AC_MSG_RESULT(no)
+ 	])
+ ])
++
++dnl #
++dnl # Linux 2.6.35 - Linux 3.0 API
++dnl #
++AC_DEFUN([ZFS_AC_KERNEL_FSYNC_WITHOUT_DENTRY], [
++	ZFS_LINUX_TRY_COMPILE([
++		#include <linux/fs.h>
++	],[
++		int (*fsync) (struct file *, int) = NULL;
++		struct file_operations fops __attribute__ ((unused));
++
++		fops.fsync = fsync;
++	],[
++		AC_MSG_RESULT([no dentry])
++		AC_DEFINE(HAVE_FSYNC_WITHOUT_DENTRY, 1,
++			[fops->fsync() without dentry])
++	],[
++	])
++])
++
++dnl #
++dnl # Linux 3.1 -x 3.x API
++dnl #
++AC_DEFUN([ZFS_AC_KERNEL_FSYNC_RANGE], [
++	ZFS_LINUX_TRY_COMPILE([
++		#include <linux/fs.h>
++	],[
++		int (*fsync) (struct file *, loff_t, loff_t, int) = NULL;
++		struct file_operations fops __attribute__ ((unused));
++
++		fops.fsync = fsync;
++	],[
++		AC_MSG_RESULT([range])
++		AC_DEFINE(HAVE_FSYNC_RANGE, 1,
++			[fops->fsync() with range])
++	],[
++	])
++])
++
++AC_DEFUN([ZFS_AC_KERNEL_FSYNC], [
++	AC_MSG_CHECKING([whether fops->fsync() wants])
++	ZFS_AC_KERNEL_FSYNC_WITH_DENTRY
++	ZFS_AC_KERNEL_FSYNC_WITHOUT_DENTRY
++	ZFS_AC_KERNEL_FSYNC_RANGE
++])
+diff --git a/config/kernel.m4 b/config/kernel.m4
+index fec157a..8cfbccf 100644
+--- a/config/kernel.m4
++++ b/config/kernel.m4
+@@ -32,7 +32,7 @@ AC_DEFUN([ZFS_AC_CONFIG_KERNEL], [
+ 	ZFS_AC_KERNEL_CONST_XATTR_HANDLER
+ 	ZFS_AC_KERNEL_XATTR_HANDLER_GET
+ 	ZFS_AC_KERNEL_XATTR_HANDLER_SET
+-	ZFS_AC_KERNEL_FSYNC_2ARGS
++	ZFS_AC_KERNEL_FSYNC
+ 	ZFS_AC_KERNEL_EVICT_INODE
+ 	ZFS_AC_KERNEL_INSERT_INODE_LOCKED
+ 	ZFS_AC_KERNEL_D_OBTAIN_ALIAS
+diff --git a/configure b/configure
+index e70651f..89596d9 100755
+--- a/configure
++++ b/configure
+@@ -14418,8 +14418,9 @@ fi
+ 
+ 
+ 
+-	{ $as_echo "$as_me:$LINENO: checking whether fops->fsync() wants 2 args" >&5
+-$as_echo_n "checking whether fops->fsync() wants 2 args... " >&6; }
++	{ $as_echo "$as_me:$LINENO: checking whether fops->fsync() wants" >&5
++$as_echo_n "checking whether fops->fsync() wants... " >&6; }
++
+ 
+ 
+ cat confdefs.h - <<_ACEOF >conftest.c
+@@ -14436,7 +14437,7 @@ int
+ main (void)
+ {
+ 
+-		int (*fsync) (struct file *, int datasync) = NULL;
++		int (*fsync) (struct file *, struct dentry *, int) = NULL;
+ 		struct file_operations fops __attribute__ ((unused));
+ 
+ 		fops.fsync = fsync;
+@@ -14462,11 +14463,75 @@ _ACEOF
+   $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }; }; then
+ 
+-		{ $as_echo "$as_me:$LINENO: result: yes" >&5
+-$as_echo "yes" >&6; }
++		{ $as_echo "$as_me:$LINENO: result: dentry" >&5
++$as_echo "dentry" >&6; }
+ 
+ cat >>confdefs.h <<\_ACEOF
+-#define HAVE_2ARGS_FSYNC 1
++#define HAVE_FSYNC_WITH_DENTRY 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++
++
++
++fi
++
++	rm -Rf build
++
++
++
++
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/fs.h>
++
++int
++main (void)
++{
++
++		int (*fsync) (struct file *, int) = NULL;
++		struct file_operations fops __attribute__ ((unused));
++
++		fops.fsync = fsync;
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: no dentry" >&5
++$as_echo "no dentry" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_FSYNC_WITHOUT_DENTRY 1
+ _ACEOF
+ 
+ 
+@@ -14474,8 +14539,6 @@ else
+   $as_echo "$as_me: failed program was:" >&5
+ sed 's/^/| /' conftest.$ac_ext >&5
+ 
+-		{ $as_echo "$as_me:$LINENO: result: no" >&5
+-$as_echo "no" >&6; }
+ 
+ 
+ 
+@@ -14486,6 +14549,71 @@ fi
+ 
+ 
+ 
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/fs.h>
++
++int
++main (void)
++{
++
++		int (*fsync) (struct file *, loff_t, loff_t, int) = NULL;
++		struct file_operations fops __attribute__ ((unused));
++
++		fops.fsync = fsync;
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: range" >&5
++$as_echo "range" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_FSYNC_RANGE 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++
++
++
++fi
++
++	rm -Rf build
++
++
++
++
++
+ 	{ $as_echo "$as_me:$LINENO: checking whether sops->evict_inode() exists" >&5
+ $as_echo_n "checking whether sops->evict_inode() exists... " >&6; }
+ 
+@@ -19027,8 +19155,9 @@ fi
+ 
+ 
+ 
+-	{ $as_echo "$as_me:$LINENO: checking whether fops->fsync() wants 2 args" >&5
+-$as_echo_n "checking whether fops->fsync() wants 2 args... " >&6; }
++	{ $as_echo "$as_me:$LINENO: checking whether fops->fsync() wants" >&5
++$as_echo_n "checking whether fops->fsync() wants... " >&6; }
++
+ 
+ 
+ cat confdefs.h - <<_ACEOF >conftest.c
+@@ -19045,7 +19174,7 @@ int
+ main (void)
+ {
+ 
+-		int (*fsync) (struct file *, int datasync) = NULL;
++		int (*fsync) (struct file *, struct dentry *, int) = NULL;
+ 		struct file_operations fops __attribute__ ((unused));
+ 
+ 		fops.fsync = fsync;
+@@ -19071,11 +19200,75 @@ _ACEOF
+   $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }; }; then
+ 
+-		{ $as_echo "$as_me:$LINENO: result: yes" >&5
+-$as_echo "yes" >&6; }
++		{ $as_echo "$as_me:$LINENO: result: dentry" >&5
++$as_echo "dentry" >&6; }
+ 
+ cat >>confdefs.h <<\_ACEOF
+-#define HAVE_2ARGS_FSYNC 1
++#define HAVE_FSYNC_WITH_DENTRY 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++
++
++
++fi
++
++	rm -Rf build
++
++
++
++
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/fs.h>
++
++int
++main (void)
++{
++
++		int (*fsync) (struct file *, int) = NULL;
++		struct file_operations fops __attribute__ ((unused));
++
++		fops.fsync = fsync;
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: no dentry" >&5
++$as_echo "no dentry" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_FSYNC_WITHOUT_DENTRY 1
+ _ACEOF
+ 
+ 
+@@ -19083,8 +19276,6 @@ else
+   $as_echo "$as_me: failed program was:" >&5
+ sed 's/^/| /' conftest.$ac_ext >&5
+ 
+-		{ $as_echo "$as_me:$LINENO: result: no" >&5
+-$as_echo "no" >&6; }
+ 
+ 
+ 
+@@ -19095,6 +19286,71 @@ fi
+ 
+ 
+ 
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/fs.h>
++
++int
++main (void)
++{
++
++		int (*fsync) (struct file *, loff_t, loff_t, int) = NULL;
++		struct file_operations fops __attribute__ ((unused));
++
++		fops.fsync = fsync;
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: range" >&5
++$as_echo "range" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_FSYNC_RANGE 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++
++
++
++fi
++
++	rm -Rf build
++
++
++
++
++
+ 	{ $as_echo "$as_me:$LINENO: checking whether sops->evict_inode() exists" >&5
+ $as_echo_n "checking whether sops->evict_inode() exists... " >&6; }
+ 
+diff --git a/module/zfs/zpl_file.c b/module/zfs/zpl_file.c
+index 298c0b6..0ef2c15 100644
+--- a/module/zfs/zpl_file.c
++++ b/module/zfs/zpl_file.c
+@@ -76,37 +76,78 @@ zpl_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 	return (error);
+ }
+ 
++#if defined(HAVE_FSYNC_WITH_DENTRY)
+ /*
+- * 2.6.35 API change,
+- * As of 2.6.35 the dentry argument to the .fsync() vfs hook was deemed
++ * Linux 2.6.x - 2.6.34 API,
++ * Through 2.6.34 the nfsd kernel server would pass a NULL 'file struct *'
++ * to the fops->fsync() hook.  For this reason, we must be careful not to
++ * use filp unconditionally.
++ */
++static int
++zpl_fsync(struct file *filp, struct dentry *dentry, int datasync)
++{
++	cred_t *cr = CRED();
++	int error;
++
++	crhold(cr);
++	error = -zfs_fsync(dentry->d_inode, datasync, cr);
++	crfree(cr);
++	ASSERT3S(error, <=, 0);
++
++	return (error);
++}
++
++#elif defined(HAVE_FSYNC_WITHOUT_DENTRY)
++/*
++ * Linux 2.6.35 - 3.0 API,
++ * As of 2.6.35 the dentry argument to the fops->fsync() hook was deemed
+  * redundant.  The dentry is still accessible via filp->f_path.dentry,
+  * and we are guaranteed that filp will never be NULL.
+- *
+- * 2.6.34 API change,
+- * Prior to 2.6.34 the nfsd kernel server would pass a NULL file struct *
+- * to the .fsync() hook.  For this reason, we must be careful not to use
+- * filp unconditionally in the 3 argument case.
+  */
+-#ifdef HAVE_2ARGS_FSYNC
+ static int
+ zpl_fsync(struct file *filp, int datasync)
+ {
+-	struct dentry *dentry = filp->f_path.dentry;
+-#else
++	struct inode *inode = filp->f_mapping->host;
++	cred_t *cr = CRED();
++	int error;
++
++	crhold(cr);
++	error = -zfs_fsync(inode, datasync, cr);
++	crfree(cr);
++	ASSERT3S(error, <=, 0);
++
++	return (error);
++}
++
++#elif defined(HAVE_FSYNC_RANGE)
++/*
++ * Linux 3.1 - 3.x API,
++ * As of 3.1 the responsibility to call filemap_write_and_wait_range() has
++ * been pushed down in to the .fsync() vfs hook.  Additionally, the i_mutex
++ * lock is no longer held by the caller, for zfs we don't require the lock
++ * to be held so we don't acquire it.
++ */
+ static int
+-zpl_fsync(struct file *filp, struct dentry *dentry, int datasync)
++zpl_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
+ {
+-#endif /* HAVE_2ARGS_FSYNC */
++	struct inode *inode = filp->f_mapping->host;
+ 	cred_t *cr = CRED();
+ 	int error;
+ 
++	error = filemap_write_and_wait_range(inode->i_mapping, start, end);
++	if (error)
++		return (error);
++
+ 	crhold(cr);
+-	error = -zfs_fsync(dentry->d_inode, datasync, cr);
++	error = -zfs_fsync(inode, datasync, cr);
+ 	crfree(cr);
+ 	ASSERT3S(error, <=, 0);
+ 
+ 	return (error);
+ }
++#else
++#error "Unsupported fops->fsync() implementation"
++#endif
+ 
+ ssize_t
+ zpl_read_common(struct inode *ip, const char *buf, size_t len, loff_t pos,
+diff --git a/zfs_config.h.in b/zfs_config.h.in
+index 6f18dca..41d7ab1 100644
+--- a/zfs_config.h.in
++++ b/zfs_config.h.in
+@@ -6,9 +6,6 @@
+ /* bio_end_io_t wants 2 args */
+ #undef HAVE_2ARGS_BIO_END_IO_T
+ 
+-/* fops->fsync() want 2 args */
+-#undef HAVE_2ARGS_FSYNC
+-
+ /* security_inode_init_security wants 6 args */
+ #undef HAVE_6ARGS_SECURITY_INODE_INIT_SECURITY
+ 
+@@ -93,6 +90,15 @@
+ /* kernel defines fmode_t */
+ #undef HAVE_FMODE_T
+ 
++/* fops->fsync() with range */
++#undef HAVE_FSYNC_RANGE
++
++/* fops->fsync() without dentry */
++#undef HAVE_FSYNC_WITHOUT_DENTRY
++
++/* fops->fsync() with dentry */
++#undef HAVE_FSYNC_WITH_DENTRY
++
+ /* blk_disk_ro() is available */
+ #undef HAVE_GET_DISK_RO
+ 

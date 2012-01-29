@@ -40,6 +40,9 @@ pkg_setup() {
 
 src_prepare() {
 	epatch 	"${FILESDIR}/${PN}-0.6.0-includedir.patch"
+	# Pinkbyte: patch for kernel 3.1 compatibility
+	epatch "${FILESDIR}/${PN}-0.6.0-kernel-3.1-compat.patch"
+	#
 	eautoreconf
 }
 
