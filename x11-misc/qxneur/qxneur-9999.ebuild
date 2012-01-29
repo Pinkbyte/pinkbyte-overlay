@@ -11,7 +11,7 @@ EGIT_PROJECT="qxneur"
 EGIT_REPO_URI="git://gitorious.org/qxneur/qxneur.git"
 
 LICENSE="GPL-2"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS=""
 IUSE=""
 SLOT="0"
 
