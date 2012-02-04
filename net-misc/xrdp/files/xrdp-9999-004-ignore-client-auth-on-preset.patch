@@ -1,0 +1,35 @@
+--- xrdp/xrdp/xrdp_wm.c.orig	2009-05-28 18:41:18.000000000 +0930
++++ xrdp/xrdp/xrdp_wm.c	2009-05-28 18:44:55.000000000 +0930
+@@ -412,14 +412,30 @@
+           if (g_strncmp("password", q, 255) == 0)
+           {
+             list_add_item(self->mm->login_names, (long)g_strdup("password"));
+-            list_add_item(self->mm->login_values,
++            if (g_strncmp("ask", r, 255) != 0) {
++            	// the password has been manually set in the config, use that
++            	// instead of what the client says.
++            	list_add_item(self->mm->login_values, (long)g_strdup(r));
++            } else {
++              // the password has been asked for by the module, use what the
++              // client says.
++            	list_add_item(self->mm->login_values,
+                    (long)g_strdup(self->session->client_info->password));
++            }
+           }
+           else if (g_strncmp("username", q, 255) == 0)
+           {
+             list_add_item(self->mm->login_names, (long)g_strdup("username"));
+-            list_add_item(self->mm->login_values,
++            if (g_strncmp("ask", r, 255) != 0) {
++            	// the username has been manually set in the config, user that
++            	// instead of what the client says.
++            	list_add_item(self->mm->login_values, (long)g_strdup(r));
++            } else {
++              // the username has been asked for by the module, use what the
++              // client says.
++            	list_add_item(self->mm->login_values,
+                    (long)g_strdup(self->session->client_info->username));
++            }
+           }
+           else
+           {

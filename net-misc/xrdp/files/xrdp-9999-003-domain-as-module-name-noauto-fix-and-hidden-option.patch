@@ -1,0 +1,85 @@
+--- xrdp/xrdp/xrdp_login_wnd.c.orig	2009-05-28 19:26:05.000000000 +0930
++++ xrdp/xrdp/xrdp_login_wnd.c	2009-05-28 19:30:37.000000000 +0930
+@@ -386,6 +386,8 @@
+   int fd;
+   int i;
+   int j;
++  int k = 0; // real number of the items in the list
++  int h = 0; // is the current item hidden?
+   char* p;
+   char* q;
+   char* r;
+@@ -411,26 +413,58 @@
+     }
+     else
+     {
+-      g_strncpy(name, p, 255);
+-      mod_data = (struct xrdp_mod_data*)
+-                     g_malloc(sizeof(struct xrdp_mod_data), 1);
+-      mod_data->names = list_create();
+-      mod_data->names->auto_free = 1;
+-      mod_data->values = list_create();
+-      mod_data->values->auto_free = 1;
+-      for (j = 0; j < section_names->count; j++)
+-      {
++    	// check to see if this is a hidden item
++    	// do this early so we don't need to mess around freeing memory
++    	for (j = 0; j < section_names->count; j++) {
+         q = (char*)list_get_item(section_names, j);
+         r = (char*)list_get_item(section_values, j);
+-        if (g_strncmp("name", q, 255) == 0)
++        if (g_strncmp("hidden", q, 255) == 0)
+         {
+-          g_strncpy(name, r, 255);
++          if (g_strncmp("yes", r, 255) == 0) {
++            h = 1;
++            break;
++          }
+         }
+-        list_add_item(mod_data->names, (long)g_strdup(q));
+-        list_add_item(mod_data->values, (long)g_strdup(r));
+       }
+-      list_add_item(b->string_list, (long)g_strdup(name));
+-      list_add_item(b->data_list, (long)mod_data);
++      
++      if (h == 1) {
++        // yup, hidden, reset state
++        h = 0;
++    	} else {
++        // not hidden
++        g_strncpy(name, p, 255);
++        mod_data = (struct xrdp_mod_data*)
++                       g_malloc(sizeof(struct xrdp_mod_data), 1);
++        mod_data->names = list_create();
++        mod_data->names->auto_free = 1;
++        mod_data->values = list_create();
++        mod_data->values->auto_free = 1;
++        for (j = 0; j < section_names->count; j++)
++        {
++          q = (char*)list_get_item(section_names, j);
++          r = (char*)list_get_item(section_values, j);
++          if (g_strncmp("name", q, 255) == 0)
++          {
++            g_strncpy(name, r, 255);
++          }
++          list_add_item(mod_data->names, (long)g_strdup(q));
++          list_add_item(mod_data->values, (long)g_strdup(r));
++        }
++
++        list_add_item(b->string_list, (long)g_strdup(name));
++        list_add_item(b->data_list, (long)mod_data);
++
++        if (g_strncmp(self->session->client_info->domain, p, 255) == 0) {
++          // "domain" matches this module's name. change the default selected item to this.
++          // normally this only applies to autologin.  now this applies it in non-auto mode
++          //
++          // we can't use (i) here as that is the index of the section in the ini, not the index of
++          // the current item in the combobox.
++          b->item_index = k;
++        }
++
++        k++;
++      }
+     }
+   }
+   g_file_close(fd);

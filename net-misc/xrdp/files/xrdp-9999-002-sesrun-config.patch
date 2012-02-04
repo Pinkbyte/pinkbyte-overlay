@@ -1,0 +1,12 @@
+--- xrdp/sesman/tools/Makefile.am.orig	2009-05-13 02:56:04.393945494 +0930
++++ xrdp/sesman/tools/Makefile.am	2009-05-13 02:56:14.697945849 +0930
+@@ -10,8 +10,8 @@
+ 
+ xrdp_sesrun_SOURCES = \
+   sesrun.c \
+   tcp.c \
+-  config.c
++  ../config.c
+ 
+ xrdp_sestest_SOURCES = \
+   sestest.c

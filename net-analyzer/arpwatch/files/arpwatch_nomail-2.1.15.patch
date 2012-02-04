@@ -1,0 +1,181 @@
+--- report.c.orig	2010-08-11 21:27:04.936004908 +0400
++++ report.c	2010-08-11 21:36:40.581758034 +0400
+@@ -50,9 +50,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <syslog.h>
+-#ifdef TIME_WITH_SYS_TIME
+ #include <time.h>
+-#endif
+ #include <unistd.h>
+ 
+ #include "gnuc.h"
+@@ -70,11 +68,15 @@
+ 
+ #define PLURAL(n) ((n) == 1 || (n) == -1 ? "" : "s")
+ 
+-static int cdepth;	/* number of outstanding children */
++#if !defined(REPORT_DIR)
++#define REPORT_DIR "/var/log/arpwatch"
++#endif
++#if !defined(REPORT_FMODE)
++#define REPORT_FMODE 644
++#endif
+ 
+ static char *fmtdate(time_t);
+ static char *fmtdelta(time_t);
+-RETSIGTYPE reaper(int);
+ static int32_t gmt2local(void);
+ 
+ static char *
+@@ -203,44 +205,6 @@
+ 	return (dt);
+ }
+ 
+-RETSIGTYPE
+-reaper(int signo)
+-{
+-	register pid_t pid;
+-	DECLWAITSTATUS status;
+-
+-	for (;;) {
+-		pid = waitpid((pid_t)0, &status, WNOHANG);
+-		if ((int)pid < 0) {
+-			/* ptrace foo */
+-			if (errno == EINTR)
+-				continue;
+-			/* ECHILD means no one left */
+-			if (errno != ECHILD)
+-				/* It is dangerous to call non reentrant */
+-				/* functions from callback (POSIX) */
+-				/* Next line effectively disables this as */
+-				/* we never get here in debug */
+-				if (debug)
+-					syslog(LOG_ERR, "reaper: %m");
+-			break;
+-		}
+-		/* Already got everyone who was done */
+-		if (pid == 0)
+-			break;
+-		--cdepth;
+-		if (WEXITSTATUS(status))
+-			/* It is dangerous to call non-reentrant */
+-			/* functions from callback (POSIX) */
+-			/* Next line effectively disables this as */
+-			/* we never get here in debug */
+-			if (debug)
+-			syslog(LOG_DEBUG, "reaper: pid %d, exit status %d",
+-				    pid, WEXITSTATUS(status));
+-	}
+-	return RETSIGVAL;
+-}
+-
+ void
+ report(register char *title, register u_int32_t a, register u_char *e1,
+     register u_char *e2, register time_t *t1p, register time_t *t2p,
+@@ -248,16 +212,12 @@
+ {
+ 	extern char *path_sendmail;
+ 	register char *cp, *hn;
+-	register int fd, pid;
++	register int fd;
+ 	register FILE *f;
+-	char tempfile[64], cpu[64], os[64];
++	char tempfile[512], cpu[64], os[64];
+ 	char *fmt = "%20s: %s\n";
+-	char *watcher = mailaddress;
+-	char *watchee = WATCHEE;
+-	char *sendmail = path_sendmail;
+ 	char *unknown = "<unknown>";
+ 	char buf[132];
+-	static int init = 0;
+ 
+ 	/* No report until we're initialized */
+ 	if (initializing)
+@@ -271,53 +271,34 @@
+ 		f = stdout;
+ 		(void)putc('\n', f);
+ 	} else {
+-		/* Setup child reaper if we haven't already */
+-		if (!init) {
+-			(void)setsignal(SIGCHLD, reaper);
+-			++init;
+-		}
+-		while (cdepth >= 3) {
+-			syslog(LOG_ERR, "report: pausing (cdepth %d)", cdepth);
+-			pause();
+-		}
+-
+-		/* Syslog this event too */
+-		dosyslog(LOG_NOTICE, title, a, e1, e2, interface);
+-
+ 		/* return if watcher is an empty string */
+ 		if ( quiet )
+ 			return;
+ 
+-		/* Update child depth */
+-		++cdepth;
+-
+-		/* Fork off child to send mail */
+-		pid = fork();
+-		if (pid) {
+-			/* Parent */
+-			if (pid < 0)
+-				syslog(LOG_ERR, "report: fork() 1: %m");
+-			return;
+-		}
++		time_t tt = time(NULL);
++		struct tm *t = localtime(&tt);
+ 
+ 		/* Child */
+ 		closelog();
+ 		(void)strcpy(tempfile, "/tmp/arpwatch.XXXXXX");
++		(void)snprintf(tempfile, sizeof(tempfile),
++			"%s/arpwatch-%04d%02d%02d_%02d%02d%02d.msgXXXXXX",
++			REPORT_DIR,
++			t->tm_year, t->tm_mon, t->tm_mday,
++			t->tm_hour, t->tm_min, t->tm_sec);
+ 		if ((fd = mkstemp(tempfile)) < 0) {
+ 			syslog(LOG_ERR, "mkstemp(%s) %m", tempfile);
++			return;
+-			exit(1);
+ 		}
++#if defined(REPORT_FMODE)
++		fchmod(fd, REPORT_FMODE);
++#endif
+ 		if ((f = fdopen(fd, "w+")) == NULL) {
+-			syslog(LOG_ERR, "child fdopen(%s): %m", tempfile);
+-			exit(1);
++			syslog(LOG_ERR, "fdopen(%s): %m", tempfile);
++			return;
+ 		}
+-		/* Cheap delete-on-close */
+-		if (unlink(tempfile) < 0)
+-			syslog(LOG_ERR, "unlink(%s): %m", tempfile);
+ 	}
+ 
+-	(void)fprintf(f, "From: %s\n", watchee);
+-	(void)fprintf(f, "To: %s\n", watcher);
+ 	if (interface == NULL) interface = ""; /* shouldn't happen */
+ 	hn = gethname(a);
+ 	if (!isdigit(*hn))
+@@ -354,17 +354,7 @@
+ 
+ 	if (debug) {
+ 		fflush(f);
+-		return;
++	} else {
++		fclose(f);
+ 	}
+-
+-	(void)rewind(f);
+-	if (dup2(fileno(f), fileno(stdin)) < 0) {
+-		syslog(LOG_ERR, "dup2: %m");
+-		exit(1);
+-	}
+-	/* XXX Need to freopen()? */
+-	/* Always Deliver interactively (pause when child depth gets large) */
+-	execl(sendmail, "sendmail", "-odi", watcher, NULL);
+-	syslog(LOG_ERR, "execl: %s: %m", sendmail);
+-	exit(1);
+ }

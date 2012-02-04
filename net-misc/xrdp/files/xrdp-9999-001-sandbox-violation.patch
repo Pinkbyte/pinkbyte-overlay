@@ -1,0 +1,8 @@
+--- xrdp/instfiles/Makefile.am.orig	2009-09-22 18:01:52.000000000 +0400
++++ xrdp/instfiles/Makefile.am	2009-09-22 18:02:14.000000000 +0400
+@@ -17,3 +17,5 @@
+ #	if [ -w /etc/init.d ]; then rm -f /etc/init.d/xrdp.sh; fi
+ #	if [ -w /etc/init.d ]; then $(LN_S) $(DESTDIR)$(sysconfdir)/xrdp/xrdp.sh /etc/init.d/xrdp.sh; fi
+ #	$(DESTDIR)$(bindir)/xrdp-keygen xrdp $(DESTDIR)$(sysconfdir)/xrdp/rsakeys.ini
++	mkdir -p $(DESTDIR)$(sysconfdir)/init.d
++	$(LN_S) $(DESTDIR)$(sysconfdir)/xrdp/xrdp.sh $(DESTDIR)$(sysconfdir)/init.d/xrdp.sh

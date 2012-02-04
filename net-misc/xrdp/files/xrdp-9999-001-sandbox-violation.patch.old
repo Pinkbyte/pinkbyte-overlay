@@ -1,0 +1,11 @@
+--- xrdp/instfiles/Makefile.am~	2009-05-13 01:28:31.000000000 +0930
++++ xrdp/instfiles/Makefile.am	2009-05-13 01:29:57.033945790 +0930
+@@ -10,6 +10,5 @@
+ # must be tab below
+ install-data-hook:
+ 	chmod 755 $(DESTDIR)$(sysconfdir)/xrdp/xrdp.sh
+-	if [ -w /etc/init.d ]; then rm -f /etc/init.d/xrdp.sh; fi
+-	if [ -w /etc/init.d ]; then $(LN_S) $(DESTDIR)$(sysconfdir)/xrdp/xrdp.sh /etc/init.d/xrdp.sh; fi
+-	$(DESTDIR)$(bindir)/xrdp-keygen xrdp $(DESTDIR)$(sysconfdir)/xrdp/rsakeys.ini
++	mkdir -p $(DESTDIR)$(sysconfdir)/init.d
++	$(LN_S) $(DESTDIR)$(sysconfdir)/xrdp/xrdp.sh $(DESTDIR)$(sysconfdir)/init.d/xrdp.sh
