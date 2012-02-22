@@ -11,7 +11,7 @@ inherit git-2 autotools
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~x86 ~amd64"
+KEYWORDS=""
 IUSE=""
 SRC_URI=""
 
