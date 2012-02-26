@@ -11,7 +11,7 @@ SRC_URI="http://cloud.github.com/downloads/xsisqox/Viewnior/${P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 DEPEND="dev-libs/glib:2
