@@ -1,17 +1,17 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/games-emulation/mednafen/mednafen-0.8.13.3.ebuild,v 1.5 2011/01/15 15:54:40 maekke Exp $
 
 EAPI=2
-inherit autotools eutils games
+
+inherit autotools eutils flag-o-matic games
 
 DESCRIPTION="An advanced NES, GB/GBC/GBA, TurboGrafx 16/CD, NGPC and Lynx emulator"
 HOMEPAGE="http://mednafen.sourceforge.net/"
-SRC_URI="http://home.pinkbyte.ru/emulators/${P}-wip.tar.bz2"
+SRC_URI="http://forum.fobby.net/index.php?t=getfile&id=345 -> ${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~ppc ~x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="alsa altivec cjk debug jack nls"
 
 RDEPEND="virtual/opengl
@@ -29,7 +29,16 @@ DEPEND="${RDEPEND}
 
 S=${WORKDIR}/${PN}
 
+pkg_setup() {
+	append-flags -fno-strict-overflow
+	append-flags -fomit-frame-pointer
+	games_pkg_setup
+}
+
 src_prepare() {
+	epatch "${FILESDIR}/${P}-psx-debug.patch" \
+		"${FILESDIR}/${P}-zlib-1.2.6.patch"
+
 	sed -i \
 		-e 's:$(datadir)/locale:/usr/share/locale:' \
 		-e 's:$(localedir):/usr/share/locale:' \
@@ -38,13 +47,9 @@ src_prepare() {
 	sed -i \
 		-e '/-fomit-frame-pointer/d' \
 		-e '/-ffast-math/d' \
-		-e '/CPPFLAGS=.*CFLAGS/s/CFLAGS/CXXFLAGS/' \
 		-e '/^AX_CFLAGS_GCC_OPTION.*OPTIMIZER_FLAGS/d' \
 		configure.ac \
 		|| die "sed failed"
-	# Pinkbyte: add ipv6 patch (DEPRECATED)
-#	use ipv6 && epatch "${FILESDIR}/${PN}-ipv6.patch"
-	#
 	eautoreconf
 }
 
