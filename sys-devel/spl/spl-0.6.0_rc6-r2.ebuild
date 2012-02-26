@@ -28,6 +28,8 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-0.6.0-includedir.patch
 	# Pinkbyte: fix build issue with 3.1 kernel
 	epatch "${FILESDIR}"/${PN}-0.6.0-kernel-3.1-compat.patch
+	# Pinkbyte: add compatibility with 3.2 kernel
+	epatch "${FILESDIR}"/${PN}-0.6.0-kernel-3.2-compat.patch
 	#
 	eautoreconf
 #	cd "${WORKDIR}"

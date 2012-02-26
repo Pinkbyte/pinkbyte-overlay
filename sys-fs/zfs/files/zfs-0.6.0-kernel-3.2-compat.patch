@@ -1,0 +1,1211 @@
+diff --git a/config/kernel-security-inode-init.m4 b/config/kernel-security-inode-init.m4
+index a26de9f..c21588a 100644
+--- a/config/kernel-security-inode-init.m4
++++ b/config/kernel-security-inode-init.m4
+@@ -12,7 +12,14 @@ AC_DEFUN([ZFS_AC_KERNEL_6ARGS_SECURITY_INODE_INIT_SECURITY], [
+ 	ZFS_LINUX_TRY_COMPILE([
+ 		#include <linux/security.h>
+ 	],[
+-		security_inode_init_security(NULL,NULL,NULL,NULL,NULL,NULL);
++		struct inode *ip __attribute__ ((unused)) = NULL;
++		struct inode *dip __attribute__ ((unused)) = NULL;
++		const struct qstr *str __attribute__ ((unused)) = NULL;
++		char *name __attribute__ ((unused)) = NULL;
++		void *value __attribute__ ((unused)) = NULL;
++		size_t len __attribute__ ((unused)) = 0;
++
++		security_inode_init_security(ip, dip, str, &name, &value, &len);
+ 	],[
+ 		AC_MSG_RESULT(yes)
+ 		AC_DEFINE(HAVE_6ARGS_SECURITY_INODE_INIT_SECURITY, 1,
+@@ -22,3 +29,33 @@ AC_DEFUN([ZFS_AC_KERNEL_6ARGS_SECURITY_INODE_INIT_SECURITY], [
+ 	])
+ 	EXTRA_KCFLAGS="$tmp_flags"
+ ])
++
++dnl #
++dnl # 3.2 API change
++dnl # The security_inode_init_security() API has been changed to include
++dnl # a filesystem specific callback to write security extended attributes.
++dnl # This was done to support the initialization of multiple LSM xattrs
++dnl # and the EVM xattr.
++dnl #
++AC_DEFUN([ZFS_AC_KERNEL_CALLBACK_SECURITY_INODE_INIT_SECURITY], [
++	AC_MSG_CHECKING([whether security_inode_init_security wants callback])
++	tmp_flags="$EXTRA_KCFLAGS"
++	EXTRA_KCFLAGS="-Werror"
++	ZFS_LINUX_TRY_COMPILE([
++		#include <linux/security.h>
++	],[
++		struct inode *ip __attribute__ ((unused)) = NULL;
++		struct inode *dip __attribute__ ((unused)) = NULL;
++		const struct qstr *str __attribute__ ((unused)) = NULL;
++		initxattrs func __attribute__ ((unused)) = NULL;
++
++		security_inode_init_security(ip, dip, str, func, NULL);
++	],[
++		AC_MSG_RESULT(yes)
++		AC_DEFINE(HAVE_CALLBACK_SECURITY_INODE_INIT_SECURITY, 1,
++		          [security_inode_init_security wants callback])
++	],[
++		AC_MSG_RESULT(no)
++	])
++	EXTRA_KCFLAGS="$tmp_flags"
++])
+diff --git a/config/kernel.m4 b/config/kernel.m4
+index 2afe77e..45e9b14 100644
+--- a/config/kernel.m4
++++ b/config/kernel.m4
+@@ -41,6 +41,7 @@ AC_DEFUN([ZFS_AC_CONFIG_KERNEL], [
+ 	ZFS_AC_KERNEL_CHECK_DISK_SIZE_CHANGE
+ 	ZFS_AC_KERNEL_TRUNCATE_SETSIZE
+ 	ZFS_AC_KERNEL_6ARGS_SECURITY_INODE_INIT_SECURITY
++	ZFS_AC_KERNEL_CALLBACK_SECURITY_INODE_INIT_SECURITY
+ 	ZFS_AC_KERNEL_MOUNT_NODEV
+ 	ZFS_AC_KERNEL_SHRINK
+ 	ZFS_AC_KERNEL_BDI
+diff --git a/configure b/configure
+index f30b1ff..5106738 100755
+--- a/configure
++++ b/configure
+@@ -15144,7 +15144,14 @@ int
+ main (void)
+ {
+ 
+-		security_inode_init_security(NULL,NULL,NULL,NULL,NULL,NULL);
++		struct inode *ip __attribute__ ((unused)) = NULL;
++		struct inode *dip __attribute__ ((unused)) = NULL;
++		const struct qstr *str __attribute__ ((unused)) = NULL;
++		char *name __attribute__ ((unused)) = NULL;
++		void *value __attribute__ ((unused)) = NULL;
++		size_t len __attribute__ ((unused)) = 0;
++
++		security_inode_init_security(ip, dip, str, &name, &value, &len);
+ 
+   ;
+   return 0;
+@@ -15192,6 +15199,79 @@ fi
+ 	EXTRA_KCFLAGS="$tmp_flags"
+ 
+ 
++	{ $as_echo "$as_me:$LINENO: checking whether security_inode_init_security wants callback" >&5
++$as_echo_n "checking whether security_inode_init_security wants callback... " >&6; }
++	tmp_flags="$EXTRA_KCFLAGS"
++	EXTRA_KCFLAGS="-Werror"
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/security.h>
++
++int
++main (void)
++{
++
++		struct inode *ip __attribute__ ((unused)) = NULL;
++		struct inode *dip __attribute__ ((unused)) = NULL;
++		const struct qstr *str __attribute__ ((unused)) = NULL;
++		initxattrs func __attribute__ ((unused)) = NULL;
++
++		security_inode_init_security(ip, dip, str, func, NULL);
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: yes" >&5
++$as_echo "yes" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_CALLBACK_SECURITY_INODE_INIT_SECURITY 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++		{ $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++
++
++
++fi
++
++	rm -Rf build
++
++
++	EXTRA_KCFLAGS="$tmp_flags"
++
++
+ 	{ $as_echo "$as_me:$LINENO: checking whether symbol mount_nodev is exported" >&5
+ $as_echo_n "checking whether symbol mount_nodev is exported... " >&6; }
+ 	grep -q -E '[[:space:]]mount_nodev[[:space:]]' \
+@@ -20191,7 +20271,14 @@ int
+ main (void)
+ {
+ 
+-		security_inode_init_security(NULL,NULL,NULL,NULL,NULL,NULL);
++		struct inode *ip __attribute__ ((unused)) = NULL;
++		struct inode *dip __attribute__ ((unused)) = NULL;
++		const struct qstr *str __attribute__ ((unused)) = NULL;
++		char *name __attribute__ ((unused)) = NULL;
++		void *value __attribute__ ((unused)) = NULL;
++		size_t len __attribute__ ((unused)) = 0;
++
++		security_inode_init_security(ip, dip, str, &name, &value, &len);
+ 
+   ;
+   return 0;
+@@ -20239,6 +20326,79 @@ fi
+ 	EXTRA_KCFLAGS="$tmp_flags"
+ 
+ 
++	{ $as_echo "$as_me:$LINENO: checking whether security_inode_init_security wants callback" >&5
++$as_echo_n "checking whether security_inode_init_security wants callback... " >&6; }
++	tmp_flags="$EXTRA_KCFLAGS"
++	EXTRA_KCFLAGS="-Werror"
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/security.h>
++
++int
++main (void)
++{
++
++		struct inode *ip __attribute__ ((unused)) = NULL;
++		struct inode *dip __attribute__ ((unused)) = NULL;
++		const struct qstr *str __attribute__ ((unused)) = NULL;
++		initxattrs func __attribute__ ((unused)) = NULL;
++
++		security_inode_init_security(ip, dip, str, func, NULL);
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: yes" >&5
++$as_echo "yes" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_CALLBACK_SECURITY_INODE_INIT_SECURITY 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++		{ $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++
++
++
++fi
++
++	rm -Rf build
++
++
++	EXTRA_KCFLAGS="$tmp_flags"
++
++
+ 	{ $as_echo "$as_me:$LINENO: checking whether symbol mount_nodev is exported" >&5
+ $as_echo_n "checking whether symbol mount_nodev is exported... " >&6; }
+ 	grep -q -E '[[:space:]]mount_nodev[[:space:]]' \
+diff --git a/module/zfs/zpl_xattr.c b/module/zfs/zpl_xattr.c
+index 9117b7b..51c81ed 100644
+--- a/module/zfs/zpl_xattr.c
++++ b/module/zfs/zpl_xattr.c
+@@ -606,6 +606,34 @@ __zpl_xattr_security_set(struct inode *ip, const char *name,
+ }
+ ZPL_XATTR_SET_WRAPPER(zpl_xattr_security_set);
+ 
++#ifdef HAVE_CALLBACK_SECURITY_INODE_INIT_SECURITY
++static int
++__zpl_xattr_security_init(struct inode *ip, const struct xattr *xattrs,
++    void *fs_info)
++{
++	const struct xattr *xattr;
++	int error = 0;
++
++	for (xattr = xattrs; xattr->name != NULL; xattr++) {
++		error = __zpl_xattr_security_set(ip,
++		    xattr->name, xattr->value, xattr->value_len, 0);
++
++		if (error < 0)
++			break;
++	}
++
++        return (error);
++}
++
++int
++zpl_xattr_security_init(struct inode *ip, struct inode *dip,
++    const struct qstr *qstr)
++{
++	return security_inode_init_security(ip, dip, qstr,
++	    &__zpl_xattr_security_init, NULL);
++}
++
++#else
+ int
+ zpl_xattr_security_init(struct inode *ip, struct inode *dip,
+     const struct qstr *qstr)
+@@ -631,6 +659,7 @@ zpl_xattr_security_init(struct inode *ip, struct inode *dip,
+ 
+         return (error);
+ }
++#endif /* HAVE_CALLBACK_SECURITY_INODE_INIT_SECURITY */
+ 
+ xattr_handler_t zpl_xattr_security_handler = {
+ 	.prefix	= XATTR_SECURITY_PREFIX,
+diff --git a/zfs_config.h.in b/zfs_config.h.in
+index b53ca52..4eee892 100644
+--- a/zfs_config.h.in
++++ b/zfs_config.h.in
+@@ -66,6 +66,9 @@
+ /* blk_rq_sectors() is available */
+ #undef HAVE_BLK_RQ_SECTORS
+ 
++/* security_inode_init_security wants callback */
++#undef HAVE_CALLBACK_SECURITY_INODE_INIT_SECURITY
++
+ /* check_disk_size_change() is available */
+ #undef HAVE_CHECK_DISK_SIZE_CHANGE
+ 
+diff --git a/Makefile.in b/Makefile.in
+index 6c55040..332efc1 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -91,6 +91,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/Makefile.in b/cmd/Makefile.in
+index f006e4c..ee3f4be 100644
+--- a/cmd/Makefile.in
++++ b/cmd/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/mount_zfs/Makefile.in b/cmd/mount_zfs/Makefile.in
+index 3ae2015..e7da7c2 100644
+--- a/cmd/mount_zfs/Makefile.in
++++ b/cmd/mount_zfs/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/sas_switch_id/Makefile.in b/cmd/sas_switch_id/Makefile.in
+index a23b35d..fb6ea65 100644
+--- a/cmd/sas_switch_id/Makefile.in
++++ b/cmd/sas_switch_id/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zdb/Makefile.in b/cmd/zdb/Makefile.in
+index 7e0a88e..da31195 100644
+--- a/cmd/zdb/Makefile.in
++++ b/cmd/zdb/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zfs/Makefile.in b/cmd/zfs/Makefile.in
+index 759492f..55ca808 100644
+--- a/cmd/zfs/Makefile.in
++++ b/cmd/zfs/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zinject/Makefile.in b/cmd/zinject/Makefile.in
+index 77d8a10..5e6f90e 100644
+--- a/cmd/zinject/Makefile.in
++++ b/cmd/zinject/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zpios/Makefile.in b/cmd/zpios/Makefile.in
+index 1374449..cf672f1 100644
+--- a/cmd/zpios/Makefile.in
++++ b/cmd/zpios/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zpool/Makefile.in b/cmd/zpool/Makefile.in
+index df27c8c..b915006 100644
+--- a/cmd/zpool/Makefile.in
++++ b/cmd/zpool/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zpool_id/Makefile.in b/cmd/zpool_id/Makefile.in
+index eefb09a..aadd124 100644
+--- a/cmd/zpool_id/Makefile.in
++++ b/cmd/zpool_id/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zpool_layout/Makefile.in b/cmd/zpool_layout/Makefile.in
+index 9914ca1..e1b1643 100644
+--- a/cmd/zpool_layout/Makefile.in
++++ b/cmd/zpool_layout/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/ztest/Makefile.in b/cmd/ztest/Makefile.in
+index 0ed7754..e99cc9e 100644
+--- a/cmd/ztest/Makefile.in
++++ b/cmd/ztest/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/cmd/zvol_id/Makefile.in b/cmd/zvol_id/Makefile.in
+index 6b2af96..d6719fd 100644
+--- a/cmd/zvol_id/Makefile.in
++++ b/cmd/zvol_id/Makefile.in
+@@ -71,6 +71,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/config/kernel-set-nlink.m4 b/config/kernel-set-nlink.m4
+new file mode 100644
+index 0000000..f7ffc0d
+--- /dev/null
++++ b/config/kernel-set-nlink.m4
+@@ -0,0 +1,20 @@
++dnl #
++dnl # Linux v3.2-rc1 API change
++dnl # SHA: bfe8684869601dacfcb2cd69ef8cfd9045f62170
++dnl #
++AC_DEFUN([ZFS_AC_KERNEL_SET_NLINK], [
++	AC_MSG_CHECKING([whether set_nlink() is available])
++	ZFS_LINUX_TRY_COMPILE([
++		#include <linux/fs.h>
++	],[
++		struct inode node;
++		unsigned int link = 0;
++		(void) set_nlink(&node, link);
++	],[
++		AC_MSG_RESULT(yes)
++		AC_DEFINE(HAVE_SET_NLINK, 1,
++		          [set_nlink() is available])
++	],[
++		AC_MSG_RESULT(no)
++	])
++])
+diff --git a/config/kernel.m4 b/config/kernel.m4
+index 8cfbccf..63a3237 100644
+--- a/config/kernel.m4
++++ b/config/kernel.m4
+@@ -42,5 +42,6 @@ AC_DEFUN([ZFS_AC_CONFIG_KERNEL], [
+ 	ZFS_AC_KERNEL_MOUNT_NODEV
+ 	ZFS_AC_KERNEL_BDI
++	ZFS_AC_KERNEL_SET_NLINK
+ 
+ 	AS_IF([test "$LINUX_OBJ" != "$LINUX"], [
+ 		KERNELMAKE_PARAMS="$KERNELMAKE_PARAMS O=$LINUX_OBJ"
+diff --git a/configure b/configure
+index 919a4dd..e9e2ec1 100755
+--- a/configure
++++ b/configure
+@@ -15226,6 +15226,73 @@ fi
+ 
+ 
+ 
++	{ $as_echo "$as_me:$LINENO: checking whether set_nlink() is available" >&5
++$as_echo_n "checking whether set_nlink() is available... " >&6; }
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/fs.h>
++
++int
++main (void)
++{
++
++		struct inode node;
++		unsigned int link = 0;
++		(void) set_nlink(&node, link);
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: yes" >&5
++$as_echo "yes" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_SET_NLINK 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++		{ $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++
++
++
++fi
++
++	rm -Rf build
++
++
++
++
+ 	if test "$LINUX_OBJ" != "$LINUX"; then
+ 
+ 		KERNELMAKE_PARAMS="$KERNELMAKE_PARAMS O=$LINUX_OBJ"
+@@ -19996,6 +20063,73 @@ fi
+ 
+ 
+ 
++	{ $as_echo "$as_me:$LINENO: checking whether set_nlink() is available" >&5
++$as_echo_n "checking whether set_nlink() is available... " >&6; }
++
++
++cat confdefs.h - <<_ACEOF >conftest.c
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++
++
++		#include <linux/fs.h>
++
++int
++main (void)
++{
++
++		struct inode node;
++		unsigned int link = 0;
++		(void) set_nlink(&node, link);
++
++  ;
++  return 0;
++}
++
++_ACEOF
++
++
++	rm -Rf build && mkdir -p build
++	echo "obj-m := conftest.o" >build/Makefile
++	if { ac_try='cp conftest.c build && make modules -C $LINUX_OBJ EXTRA_CFLAGS="-Werror-implicit-function-declaration $EXTRA_KCFLAGS" $ARCH_UM M=$PWD/build'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } >/dev/null && { ac_try='test -s build/conftest.o'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++
++		{ $as_echo "$as_me:$LINENO: result: yes" >&5
++$as_echo "yes" >&6; }
++
++cat >>confdefs.h <<\_ACEOF
++#define HAVE_SET_NLINK 1
++_ACEOF
++
++
++else
++  $as_echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++		{ $as_echo "$as_me:$LINENO: result: no" >&5
++$as_echo "no" >&6; }
++
++
++
++fi
++
++	rm -Rf build
++
++
++
++
+ 	if test "$LINUX_OBJ" != "$LINUX"; then
+ 
+ 		KERNELMAKE_PARAMS="$KERNELMAKE_PARAMS O=$LINUX_OBJ"
+diff --git a/dracut/90zfs/Makefile.in b/dracut/90zfs/Makefile.in
+index 07bf3f2..cc79618 100644
+--- a/dracut/90zfs/Makefile.in
++++ b/dracut/90zfs/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/dracut/Makefile.in b/dracut/Makefile.in
+index b2769b1..1c6b3e6 100644
+--- a/dracut/Makefile.in
++++ b/dracut/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/etc/Makefile.in b/etc/Makefile.in
+index 594db91..a2e3986 100644
+--- a/etc/Makefile.in
++++ b/etc/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/etc/init.d/Makefile.in b/etc/init.d/Makefile.in
+index 31da3b6..9eb8ae7 100644
+--- a/etc/init.d/Makefile.in
++++ b/etc/init.d/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/etc/zfs/Makefile.in b/etc/zfs/Makefile.in
+index 59c7b8e..6c81f5d 100644
+--- a/etc/zfs/Makefile.in
++++ b/etc/zfs/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/include/Makefile.in b/include/Makefile.in
+index 9ea2e2f..f82fdb2 100644
+--- a/include/Makefile.in
++++ b/include/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/include/linux/Makefile.in b/include/linux/Makefile.in
+index 5e04eb4..e50b89b 100644
+--- a/include/linux/Makefile.in
++++ b/include/linux/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/include/linux/vfs_compat.h b/include/linux/vfs_compat.h
+index 825a7fd..371bbc1 100644
+--- a/include/linux/vfs_compat.h
++++ b/include/linux/vfs_compat.h
+@@ -94,4 +94,19 @@ bdi_setup_and_register(struct backing_dev_info *bdi,char *name,unsigned int cap)
+ }
+ #endif /* HAVE_BDI && !HAVE_BDI_SETUP_AND_REGISTER */
+ 
++/*
++ * 3.2-rc1 API change,
++ * Add set_nlink() if it is not exported by the Linux kernel.
++ *
++ * i_nlink is read-only in Linux 3.2, but it can be set directly in
++ * earlier kernels.
++ */
++#ifndef HAVE_SET_NLINK
++static inline void
++set_nlink(struct inode *inode, unsigned int nlink)
++{
++	inode->i_nlink = nlink;
++}
++#endif /* HAVE_SET_NLINK */
++
+ #endif /* _ZFS_VFS_H */
+diff --git a/include/sys/Makefile.in b/include/sys/Makefile.in
+index ad98df9..b17649b 100644
+--- a/include/sys/Makefile.in
++++ b/include/sys/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/include/sys/fm/Makefile.in b/include/sys/fm/Makefile.in
+index b29c9f3..e3fd84c 100644
+--- a/include/sys/fm/Makefile.in
++++ b/include/sys/fm/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/include/sys/fm/fs/Makefile.in b/include/sys/fm/fs/Makefile.in
+index 395e698..4095261 100644
+--- a/include/sys/fm/fs/Makefile.in
++++ b/include/sys/fm/fs/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/include/sys/fs/Makefile.in b/include/sys/fs/Makefile.in
+index c6de71a..db73ab8 100644
+--- a/include/sys/fs/Makefile.in
++++ b/include/sys/fs/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/Makefile.in b/lib/Makefile.in
+index e132c20..17f84a5 100644
+--- a/lib/Makefile.in
++++ b/lib/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libavl/Makefile.in b/lib/libavl/Makefile.in
+index 38a8357..55bb04d 100644
+--- a/lib/libavl/Makefile.in
++++ b/lib/libavl/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libefi/Makefile.in b/lib/libefi/Makefile.in
+index 9f23630..6e4a83b 100644
+--- a/lib/libefi/Makefile.in
++++ b/lib/libefi/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libnvpair/Makefile.in b/lib/libnvpair/Makefile.in
+index 589938e..60439ae 100644
+--- a/lib/libnvpair/Makefile.in
++++ b/lib/libnvpair/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libshare/Makefile.in b/lib/libshare/Makefile.in
+index c0c0786..94ea82e 100644
+--- a/lib/libshare/Makefile.in
++++ b/lib/libshare/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/Makefile.in b/lib/libspl/Makefile.in
+index f0d3d76..194679a 100644
+--- a/lib/libspl/Makefile.in
++++ b/lib/libspl/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/asm-generic/Makefile.in b/lib/libspl/asm-generic/Makefile.in
+index 2e29d93..a9ffb57 100644
+--- a/lib/libspl/asm-generic/Makefile.in
++++ b/lib/libspl/asm-generic/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/asm-i386/Makefile.in b/lib/libspl/asm-i386/Makefile.in
+index d366650..ca65730 100644
+--- a/lib/libspl/asm-i386/Makefile.in
++++ b/lib/libspl/asm-i386/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/asm-x86_64/Makefile.in b/lib/libspl/asm-x86_64/Makefile.in
+index b3b9042..2db49b3 100644
+--- a/lib/libspl/asm-x86_64/Makefile.in
++++ b/lib/libspl/asm-x86_64/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/Makefile.in b/lib/libspl/include/Makefile.in
+index 4653fea..d7a8f52 100644
+--- a/lib/libspl/include/Makefile.in
++++ b/lib/libspl/include/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/ia32/Makefile.in b/lib/libspl/include/ia32/Makefile.in
+index 3782302..b608928 100644
+--- a/lib/libspl/include/ia32/Makefile.in
++++ b/lib/libspl/include/ia32/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/ia32/sys/Makefile.in b/lib/libspl/include/ia32/sys/Makefile.in
+index 9503ba6..3662996 100644
+--- a/lib/libspl/include/ia32/sys/Makefile.in
++++ b/lib/libspl/include/ia32/sys/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/rpc/Makefile.in b/lib/libspl/include/rpc/Makefile.in
+index f3a7fd3..68e3c2f 100644
+--- a/lib/libspl/include/rpc/Makefile.in
++++ b/lib/libspl/include/rpc/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/sys/Makefile.in b/lib/libspl/include/sys/Makefile.in
+index 8a69ebc..6851505 100644
+--- a/lib/libspl/include/sys/Makefile.in
++++ b/lib/libspl/include/sys/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/sys/dktp/Makefile.in b/lib/libspl/include/sys/dktp/Makefile.in
+index 8cd6cbf..89c3285 100644
+--- a/lib/libspl/include/sys/dktp/Makefile.in
++++ b/lib/libspl/include/sys/dktp/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/sys/sysevent/Makefile.in b/lib/libspl/include/sys/sysevent/Makefile.in
+index 2078025..de9db42 100644
+--- a/lib/libspl/include/sys/sysevent/Makefile.in
++++ b/lib/libspl/include/sys/sysevent/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libspl/include/util/Makefile.in b/lib/libspl/include/util/Makefile.in
+index 91c91fa..d7cd17c 100644
+--- a/lib/libspl/include/util/Makefile.in
++++ b/lib/libspl/include/util/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libunicode/Makefile.in b/lib/libunicode/Makefile.in
+index 932fb8a..f6c8690 100644
+--- a/lib/libunicode/Makefile.in
++++ b/lib/libunicode/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libuutil/Makefile.in b/lib/libuutil/Makefile.in
+index c05c31c..d44bba2 100644
+--- a/lib/libuutil/Makefile.in
++++ b/lib/libuutil/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libzfs/Makefile.in b/lib/libzfs/Makefile.in
+index 14db984..29642b1 100644
+--- a/lib/libzfs/Makefile.in
++++ b/lib/libzfs/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/lib/libzpool/Makefile.in b/lib/libzpool/Makefile.in
+index 63297bc..0e46c15 100644
+--- a/lib/libzpool/Makefile.in
++++ b/lib/libzpool/Makefile.in
+@@ -70,6 +70,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/man/Makefile.in b/man/Makefile.in
+index e6a82e9..84c6c17 100644
+--- a/man/Makefile.in
++++ b/man/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/man/man8/Makefile.in b/man/man8/Makefile.in
+index 98193db..be187c9 100644
+--- a/man/man8/Makefile.in
++++ b/man/man8/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/module/zfs/zfs_znode.c b/module/zfs/zfs_znode.c
+index 1edbd7e..a35e3b5 100644
+--- a/module/zfs/zfs_znode.c
++++ b/module/zfs/zfs_znode.c
+@@ -440,7 +440,7 @@ zfs_inode_update(znode_t *zp)
+ 	ip->i_generation = zp->z_gen;
+ 	ip->i_uid = zp->z_uid;
+ 	ip->i_gid = zp->z_gid;
+-	ip->i_nlink = zp->z_links;
++	set_nlink(ip, zp->z_links);
+ 	ip->i_mode = zp->z_mode;
+ 	ip->i_blkbits = SPA_MINBLOCKSHIFT;
+ 	dmu_object_size_from_db(sa_get_db(zp->z_sa_hdl), &blksize,
+diff --git a/scripts/Makefile.in b/scripts/Makefile.in
+index 966288d..5115a9e 100644
+--- a/scripts/Makefile.in
++++ b/scripts/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/scripts/zpios-profile/Makefile.in b/scripts/zpios-profile/Makefile.in
+index a9ba3e7..1c59d74 100644
+--- a/scripts/zpios-profile/Makefile.in
++++ b/scripts/zpios-profile/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/scripts/zpios-test/Makefile.in b/scripts/zpios-test/Makefile.in
+index e237411..fb11145 100644
+--- a/scripts/zpios-test/Makefile.in
++++ b/scripts/zpios-test/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/scripts/zpool-config/Makefile.in b/scripts/zpool-config/Makefile.in
+index 1e887e6..2c4fcb9 100644
+--- a/scripts/zpool-config/Makefile.in
++++ b/scripts/zpool-config/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/scripts/zpool-layout/Makefile.in b/scripts/zpool-layout/Makefile.in
+index 6106756..bebd47b 100644
+--- a/scripts/zpool-layout/Makefile.in
++++ b/scripts/zpool-layout/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/udev/Makefile.in b/udev/Makefile.in
+index e1e5924..856d11a 100644
+--- a/udev/Makefile.in
++++ b/udev/Makefile.in
+@@ -68,6 +68,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/udev/rules.d/Makefile.in b/udev/rules.d/Makefile.in
+index dba7a45..37eb4c7 100644
+--- a/udev/rules.d/Makefile.in
++++ b/udev/rules.d/Makefile.in
+@@ -69,6 +69,7 @@ am__aclocal_m4_deps =  \
+ 	$(top_srcdir)/config/kernel-rq-for-each_segment.m4 \
+ 	$(top_srcdir)/config/kernel-rq-is_sync.m4 \
+ 	$(top_srcdir)/config/kernel-security-inode-init.m4 \
++	$(top_srcdir)/config/kernel-set-nlink.m4 \
+ 	$(top_srcdir)/config/kernel-truncate-setsize.m4 \
+ 	$(top_srcdir)/config/kernel-xattr-handler.m4 \
+ 	$(top_srcdir)/config/kernel.m4 \
+diff --git a/zfs_config.h.in b/zfs_config.h.in
+index 41d7ab1..e0f7467 100644
+--- a/zfs_config.h.in
++++ b/zfs_config.h.in
+@@ -153,6 +153,9 @@
+ /* rq_is_sync() is available */
+ #undef HAVE_RQ_IS_SYNC
+ 
++/* set_nlink() is available */
++#undef HAVE_SET_NLINK
++
+ /* Define to 1 if you have the <stdint.h> header file. */
+ #undef HAVE_STDINT_H
+ 
