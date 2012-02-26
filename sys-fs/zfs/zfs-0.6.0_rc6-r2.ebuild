@@ -18,7 +18,7 @@ KEYWORDS="~amd64 -x86"
 IUSE=""
 
 DEPEND="
-		>=sys-devel/spl-${PV}
+		>=sys-kernel/spl-${PV}
 		virtual/linux-sources
 		"
 RDEPEND="
