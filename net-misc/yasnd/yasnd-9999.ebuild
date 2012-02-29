@@ -3,11 +3,11 @@
 
 EAPI="4"
 
+inherit git-2 autotools
+
 DESCRIPTION="Yet Another Stupid Network Daemon, tool that checks hosts' availability"
 HOMEPAGE="http://github.com/Pinkbyte/yasnd"
 EGIT_REPO_URI="http://github.com/Pinkbyte/yasnd.git"
-
-inherit git-2 autotools
 
 LICENSE="GPL-2"
 SLOT="0"
