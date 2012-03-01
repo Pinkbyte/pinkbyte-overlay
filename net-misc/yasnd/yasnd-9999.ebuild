@@ -3,7 +3,7 @@
 
 EAPI="4"
 
-inherit git-2 autotools
+inherit git-2 autotools-utils
 
 DESCRIPTION="Yet Another Stupid Network Daemon, tool that checks hosts' availability"
 HOMEPAGE="http://github.com/Pinkbyte/yasnd"
@@ -18,6 +18,11 @@ SRC_URI=""
 RDEPEND="app-mobilephone/gammu
 	dev-libs/confuse"
 
-src_prepare() {
-	eautoreconf
+DEPEND="${RDEPEND}"
+
+AUTOTOOLS_AUTORECONF="1"
+
+src_install() {
+	newinitd contrib/yasnd.openrc yasnd
+	autotools-utils_src_install
 }
