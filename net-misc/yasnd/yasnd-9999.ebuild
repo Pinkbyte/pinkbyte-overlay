@@ -21,6 +21,7 @@ RDEPEND="app-mobilephone/gammu
 DEPEND="${RDEPEND}"
 
 AUTOTOOLS_AUTORECONF="1"
+AUTOTOOLS_IN_SOURCE_BUILD="1"
 
 src_install() {
 	newinitd contrib/yasnd.openrc yasnd
