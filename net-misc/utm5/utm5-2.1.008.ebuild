@@ -2,6 +2,8 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
+EAPI=2
+
 DESCRIPTION="NetUP UTM - universal billing system for Internet Service Providers."
 HOMEPAGE="www.netup.ru"
 SRC_URI="${P}.tar.bz2"
@@ -14,7 +16,7 @@ IUSE=""
 RESTRICT="fetch nostrip"
 
 RDEPEND="virtual/libc
-		dev-libs/openssl
+		dev-libs/openssl:0.9.8
 		sys-libs/zlib
 		dev-libs/libxslt
 		|| ( dev-db/mysql
