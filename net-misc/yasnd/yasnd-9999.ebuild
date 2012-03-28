@@ -25,5 +25,6 @@ AUTOTOOLS_IN_SOURCE_BUILD="1"
 
 src_install() {
 	newinitd contrib/yasnd.openrc yasnd
+	newinitd contrib/yasnd-early.openrc yasnd-early
 	autotools-utils_src_install
 }
