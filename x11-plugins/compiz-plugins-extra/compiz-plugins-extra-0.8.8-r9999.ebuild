@@ -39,8 +39,7 @@ src_prepare() {
 		epatch "${FILESDIR}"/${PN}-no-gconf.patch
 	fi
 
-# Pinkbyte: !STUB! Need to adapt patch for 0.8.8
-#	epatch "${FILESDIR}/${P}-libnotify.patch"
+	epatch "${FILESDIR}/${P}-libnotify.patch"
 
 	# required to apply the above patch
 	intltoolize --copy --force || die "intltoolize failed"
