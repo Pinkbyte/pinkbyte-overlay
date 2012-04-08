@@ -13,8 +13,7 @@ SRC_URI="http://releases.compiz.org/${PV}/${P}.tar.bz2"
 LICENSE="GPL-2 LGPL-2.1 MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
-# dbus has been disabled because of bug 365121
-IUSE="+cairo fuse gnome gconf gtk kde +svg" # dbus
+IUSE="+cairo dbus fuse gnome gconf gtk kde +svg"
 
 COMMONDEPEND="
 	dev-libs/glib:2
@@ -57,8 +56,8 @@ COMMONDEPEND="
 		>=gnome-base/librsvg-2.14.0:2
 		>=x11-libs/cairo-1.0
 	)
+	dbus? ( >=sys-apps/dbus-1.0 )
 "
-# dbus? ( >=sys-apps/dbus-1.0 )
 
 DEPEND="${COMMONDEPEND}
 	dev-util/pkgconfig
@@ -109,8 +108,8 @@ src_configure() {
 		--with-default-plugins \
 		$(use_enable svg librsvg) \
 		$(use_enable cairo annotate) \
-		--disable-dbus \
-		--disable-dbus-glib \
+		$(use_enable dbus) \
+		$(use_enable dbus dbus-glib) \
 		$(use_enable fuse) \
 		$(use_enable gnome) \
 		$(use_enable gnome metacity) \
@@ -118,9 +117,6 @@ src_configure() {
 		$(use_enable kde kde4) \
 		--disable-kde \
 		${myconf}
-
-		# $(use_enable dbus)
-		# $(use_enable dbus dbus-glib)
 }
 
 src_install() {
