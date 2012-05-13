@@ -7,7 +7,7 @@ inherit autotools eutils flag-o-matic games
 
 DESCRIPTION="An advanced NES, GB/GBC/GBA, TurboGrafx 16/CD, NGPC and Lynx emulator"
 HOMEPAGE="http://mednafen.sourceforge.net/"
-SRC_URI="http://forum.fobby.net/index.php?t=getfile&id=345 -> ${P}.tar.bz2"
+SRC_URI="http://forum.fobby.net/index.php?t=getfile&id=358 -> ${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -36,9 +36,6 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch "${FILESDIR}/${P}-psx-debug.patch" \
-		"${FILESDIR}/${P}-zlib-1.2.6.patch"
-
 	sed -i \
 		-e 's:$(datadir)/locale:/usr/share/locale:' \
 		-e 's:$(localedir):/usr/share/locale:' \
