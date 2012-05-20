@@ -1,0 +1,60 @@
+diff -ur snort-2.9.2.2-snortsam/src/output-plugins/spo_alert_fwsam.c snort-2.9.2.2/src/output-plugins/spo_alert_fwsam.c
+--- snort-2.9.2.2-snortsam/src/output-plugins/spo_alert_fwsam.c	2012-05-20 18:33:57.271278999 +0400
++++ snort-2.9.2.2/src/output-plugins/spo_alert_fwsam.c	2012-05-20 19:18:47.383364414 +0400
+@@ -515,6 +515,7 @@
+ 	optp->how=FWSAM_HOW_INOUT;			/* inbound and outbound block */
+ 	optp->who=FWSAM_WHO_SRC;			/* the source  */
+     optp->loglevel=FWSAM_LOG_LONGALERT; /* the log level default */
++	optp->action = FWSAM_STATUS_BLOCK; /* type of action */
+ 	/* parse the fwsam keywords */
+ 
+ #ifdef FWSAMDEBUG
+@@ -566,6 +567,17 @@
+ 					optp->duration=0;
+ 				else
+ 					possprob=TRUE;
++				if (!possprob)
++				{
++					char* tok = ap;
++					char* action = strtok(tok, ",");
++					action = strtok(NULL, ",");
++					if (action != NULL)
++					{
++						// set our custom action for redirecting traffic instead of blocking
++						optp->action = FWSAM_STATUS_REDIRECT;
++					}
++				}
+ 			}
+ 			else if(!*ap)
+ 				possprob=TRUE;
+@@ -879,7 +891,7 @@
+ 						sampacket.snortseqno[1]=(char)(station->myseqno>>8);
+ 						sampacket.fwseqno[0]=(char)station->stationseqno;/* fill station seqno */
+ 						sampacket.fwseqno[1]=(char)(station->stationseqno>>8);
+-						sampacket.status=FWSAM_STATUS_BLOCK;			/* set block mode */
++						sampacket.status=optp->action;				/* set action mode */
+ 						sampacket.version=FWSAM_PACKETVERSION;			/* set packet version */
+ 						sampacket.duration[0]=(char)optp->duration;		/* set duration */
+ 						sampacket.duration[1]=(char)(optp->duration>>8);
+diff -ur snort-2.9.2.2-snortsam/src/output-plugins/spo_alert_fwsam.h snort-2.9.2.2/src/output-plugins/spo_alert_fwsam.h
+--- snort-2.9.2.2-snortsam/src/output-plugins/spo_alert_fwsam.h	2012-05-20 18:33:57.270278999 +0400
++++ snort-2.9.2.2/src/output-plugins/spo_alert_fwsam.h	2012-05-20 19:02:01.695332482 +0400
+@@ -107,6 +107,10 @@
+ #define FWSAM_STATUS_BLOCK		3
+ #define FWSAM_STATUS_UNBLOCK	9
+ 
++// Custom action to redirect traffic instead of drop
++#define FWSAM_STATUS_REDIRECT	10
++
++
+ #define FWSAM_STATUS_OK			4	/* fw to snort */
+ #define FWSAM_STATUS_ERROR		5
+ #define FWSAM_STATUS_NEWKEY		6
+@@ -186,6 +190,7 @@
+ 	unsigned char	who;
+ 	unsigned char	how;
+ 	unsigned char	loglevel;
++	unsigned char	action; // type of action
+ }	FWsamOptions;
+ 
+ typedef struct _FWsamlistpointer
