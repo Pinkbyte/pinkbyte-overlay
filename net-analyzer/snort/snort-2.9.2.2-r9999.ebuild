@@ -3,7 +3,7 @@
 # $Header: /var/cvsroot/gentoo-x86/net-analyzer/snort/snort-2.9.2.2.ebuild,v 1.1 2012/04/04 09:39:53 patrick Exp $
 
 EAPI="2"
-inherit eutils autotools multilib
+inherit eutils autotools flag-o-matic multilib
 
 DESCRIPTION="The de facto standard for intrusion detection/prevention"
 HOMEPAGE="http://www.snort.org/"
@@ -63,6 +63,7 @@ src_prepare() {
 	if use snortsam; then
 		epatch "${FILESDIR}/snortsam-${PV}.diff.gz"
 		epatch "${FILESDIR}/snortsam-redirect-${PV}.patch"
+		use debug && append-flags "-DFWSAMDEBUG"
 	fi
 	#
 
@@ -109,8 +110,7 @@ src_configure() {
 		--disable-intel-soft-cpm \
 		--disable-static-daq \
 		--disable-rzb-saac \
-		--without-oracle \
-		--enable-sourcefire
+		--without-oracle
 }
 
 src_install() {
