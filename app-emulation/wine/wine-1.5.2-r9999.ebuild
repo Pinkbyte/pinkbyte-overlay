@@ -129,7 +129,7 @@ src_prepare() {
 	# Pinkbyte: fix perfomance problems with vertex buffers
 	epatch "${FILESDIR}"/disable-dynamic-vertex-buffers.patch
 	# Pinkbyte: finally, this should be executed after applying such patches
-	${S}/tools/make_requests
+	"${S}"/tools/make_requests
 	#
 	epatch_user #282735
 	eautoreconf
