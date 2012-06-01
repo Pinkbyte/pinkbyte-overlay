@@ -1,0 +1,37 @@
+diff -ur snortsam-2.7.0-orig/src/snortsam.c snortsam/src/snortsam.c
+--- snortsam-2.7.0-orig/src/snortsam.c	2012-05-20 20:59:46.277029000 +0400
++++ snortsam/src/snortsam.c	2012-05-25 16:16:59.411043000 +0400
+@@ -2467,6 +2467,7 @@
+ 		printf("Debug: Received Packet: %s\n",packet.status==FWSAM_STATUS_CHECKIN?"CHECKIN":
+ 											  packet.status==FWSAM_STATUS_CHECKOUT?"CHECKOUT":
+ 											  packet.status==FWSAM_STATUS_BLOCK?"BLOCK":
++											  packet.status==FWSAM_STATUS_REDIRECT?"REDIRECT":
+ 											  packet.status==FWSAM_STATUS_UNBLOCK?"UNBLOCK":"**UNKNOWN**");
+ 		printf("Debug: Snort SeqNo:  %x\n",packet.snortseqno[0]|(packet.snortseqno[1]<<8));
+ 		printf("Debug: Mgmt SeqNo :  %x\n",packet.fwseqno[0]|(packet.fwseqno[1]<<8));
+@@ -2512,11 +2513,12 @@
+ 				snortbox->toberemoved=TRUE;				/* Mark sensor for removal from list. */
+ 				ret=FALSE;
+ 			}
+-			else if(packet.status==FWSAM_STATUS_BLOCK || packet.status==FWSAM_STATUS_UNBLOCK)	/* if we received a blocking request */
++			else if(packet.status==FWSAM_STATUS_BLOCK || packet.status==FWSAM_STATUS_REDIRECT || packet.status==FWSAM_STATUS_UNBLOCK)	/* if we received a blocking or redirecting request */
+ 			{	if((( (packet.fwseqno[0]|(packet.fwseqno[1]<<8)) ==snortbox->myseqno) && ( (packet.snortseqno[0]|(packet.snortseqno[1]<<8)) ==((snortbox->snortseqno+snortbox->myseqno)&0xffff) )) || disableseqnocheck)
+ 				{	packstat=packet.status;
+ #ifdef FWSAMDEBUG
+-					printf("Debug: %s request received...\n",packet.status==FWSAM_STATUS_BLOCK?"Blocking":"Unblocking");
++					printf("Debug: %s request received...\n",packet.status==FWSAM_STATUS_BLOCK?"Blocking":
++											packet.status==FWSAM_STATUS_REDIRECT?"Redirecting":"Unblocking");
+ #endif
+ 					bmode=packet.fwmode;			/* save parameters from packet */
+ 					if(packet.endiancheck==1)		/* Check if peer has the same endianess */
+diff -ur snortsam-2.7.0-orig/src/snortsam.h snortsam/src/snortsam.h
+--- snortsam-2.7.0-orig/src/snortsam.h	2012-05-20 20:59:46.278524000 +0400
++++ snortsam/src/snortsam.h	2012-05-20 21:01:02.273330000 +0400
+@@ -242,6 +242,7 @@
+ #define FWSAM_STATUS_CHECKOUT	2
+ #define FWSAM_STATUS_BLOCK		3
+ #define FWSAM_STATUS_UNBLOCK	9
++#define FWSAM_STATUS_REDIRECT		10
+ 
+ #define FWSAM_STATUS_OK			4	/* fw to snort */
+ #define FWSAM_STATUS_ERROR		5
