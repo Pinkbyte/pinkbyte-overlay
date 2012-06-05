@@ -1,8 +1,8 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/x11-plugins/compiz-plugins-main/compiz-plugins-main-0.8.6-r1.ebuild,v 1.4 2011/03/21 19:50:33 nirbheek Exp $
 
-EAPI="2"
+EAPI="4"
 
 inherit autotools eutils gnome2-utils
 
@@ -15,30 +15,27 @@ SLOT="0"
 KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
 IUSE="gconf"
 
-MY_PV="0.8.4"
-
 RDEPEND="
 	>=gnome-base/librsvg-2.14.0:2
 	virtual/jpeg:0
 	x11-libs/cairo
-	>=x11-libs/compiz-bcop-${MY_PV}
+	>=x11-libs/compiz-bcop-${PV}
 	>=x11-wm/compiz-${PV}[gconf?]
 "
 
 DEPEND="${RDEPEND}
 	>=dev-util/intltool-0.35
-	>=dev-util/pkgconfig-0.19
+	virtual/pkgconfig
 	>=sys-devel/gettext-0.15
 	gconf? ( gnome-base/gconf:2 )
 "
 
+DOCS="AUTHORS ChangeLog INSTALL NEWS README TODO"
+
 src_prepare() {
 	if ! use gconf; then
 		epatch "${FILESDIR}"/${PN}-no-gconf.patch
-
-		# required to apply the above patch
-		intltoolize --copy --force || die "intltoolize failed"
-		eautoreconf || die "eautoreconf failed"
+		eautoreconf
 	fi
 }
 
@@ -51,7 +48,7 @@ src_configure() {
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "emake install failed"
+	default
 	find "${D}" -name '*.la' -delete || die
 }
 
