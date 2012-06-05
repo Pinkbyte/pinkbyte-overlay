@@ -5,7 +5,7 @@
 EAPI="4"
 PYTHON_DEPEND="2"
 
-inherit distutils gnome2-utils
+inherit distutils eutils gnome2-utils
 
 MINIMUM_COMPIZ_RELEASE=0.6.0
 
@@ -35,6 +35,10 @@ PYTHON_MODNAME="FusionIcon"
 pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
+}
+
+src_prepare() {
+	use qt4 && epatch "${FILESDIR}/${P}-qt4-interface-subprocess-call.patch"
 }
 
 src_install() {
