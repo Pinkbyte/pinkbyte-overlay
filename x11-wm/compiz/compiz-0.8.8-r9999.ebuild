@@ -105,7 +105,6 @@ src_configure() {
 	fi
 
 	econf \
-		--disable-dependency-tracking \
 		--enable-fast-install \
 		--disable-static \
 		--disable-gnome-keybindings \
