@@ -1,8 +1,8 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/x11-wm/compiz/compiz-0.8.6-r3.ebuild,v 1.3 2011/11/11 22:54:51 ssuominen Exp $
 
-EAPI="2"
+EAPI="4"
 
 inherit autotools eutils gnome2-utils
 
@@ -120,12 +120,12 @@ src_configure() {
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "emake install failed"
+	emake DESTDIR="${D}" install
 
 	find "${D}" -name '*.la' -delete || die
 
 	# Install compiz-manager
-	dobin "${FILESDIR}/compiz-manager" || die "dobin failed"
+	dobin "${FILESDIR}/compiz-manager"
 
 	# Add the full-path to lspci
 	sed -i "s#lspci#/usr/sbin/lspci#" "${D}/usr/bin/compiz-manager" || die "sed 1 failed"
@@ -134,7 +134,7 @@ src_install() {
 	sed -i "s#/lib/#/$(get_libdir)/#g" "${D}/usr/bin/compiz-manager" || die "sed 2 failed"
 
 	# Create gentoo's config file
-	dodir /etc/xdg/compiz || die "dodir failed"
+	dodir /etc/xdg/compiz
 
 	cat <<- EOF > "${D}/etc/xdg/compiz/compiz-manager"
 	COMPIZ_BIN_PATH="/usr/bin/"
@@ -146,10 +146,10 @@ src_install() {
 	SKIP_CHECKS="yes"
 	EOF
 
-	dodoc AUTHORS ChangeLog NEWS README TODO || die "dodoc failed"
+	dodoc AUTHORS ChangeLog NEWS README TODO
 
 	insinto "/usr/share/applications"
-	doins "${FILESDIR}/compiz.desktop" || die "Failed to install compiz.desktop"
+	doins "${FILESDIR}/compiz.desktop"
 }
 
 pkg_preinst() {
