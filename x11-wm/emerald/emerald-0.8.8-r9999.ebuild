@@ -36,9 +36,6 @@ DOCS="AUTHORS ChangeLog INSTALL NEWS README TODO"
 src_prepare() {
 	# Fix pkg-config file pollution wrt #380197
 	epatch "${FILESDIR}"/${P}-pkgconfig-pollution.patch
-	# fix build with gtk+-2.22 - bug 341143
-	sed -i -e '/#define G[DT]K_DISABLE_DEPRECATED/s:^://:' \
-		include/emerald.h || die
 }
 
 src_configure() {
