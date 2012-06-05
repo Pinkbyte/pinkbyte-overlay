@@ -75,10 +75,6 @@ src_prepare() {
 	echo "gtk/gnome/compiz-wm.desktop.in" >> "${S}/po/POTFILES.skip"
 	echo "metadata/core.xml.in" >> "${S}/po/POTFILES.skip"
 
-	# fix cont corruption, bug #343861
-#	epatch "${FILESDIR}"/${P}-r2-fontcorruption.patch
-#	epatch "${FILESDIR}"/${P}-gdk-display-deprecated.patch
-
 	if ! use gnome || ! use gconf; then
 		epatch "${FILESDIR}"/${PN}-no-gconf.patch
 	fi
