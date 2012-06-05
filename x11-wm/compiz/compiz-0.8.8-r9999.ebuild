@@ -16,7 +16,7 @@ KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
 IUSE="+cairo dbus fuse +glib gnome gconf gtk kde +svg"
 
 COMMONDEPEND="
-	glib? ( dev-libs/glib:2 )
+	dev-libs/glib:2
 	dev-libs/libxml2:2
 	dev-libs/libxslt
 	media-libs/libpng
