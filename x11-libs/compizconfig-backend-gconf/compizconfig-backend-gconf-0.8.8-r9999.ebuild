@@ -1,8 +1,8 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/x11-libs/compizconfig-backend-gconf/compizconfig-backend-gconf-0.8.4-r2.ebuild,v 1.2 2011/03/21 19:55:08 nirbheek Exp $
 
-EAPI=2
+EAPI="4"
 
 DESCRIPTION="Compizconfig Gconf Backend"
 HOMEPAGE="http://www.compiz.org/"
@@ -20,14 +20,15 @@ DEPEND="
 "
 RDEPEND="${DEPEND}"
 
+DOCS="AUTHORS ChangeLog INSTALL NEWS README"
+
 src_configure() {
 	econf \
-		--disable-dependency-tracking \
 		--enable-fast-install \
 		--disable-static
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "emake install failed"
+	default
 	find "${D}" -name '*.la' -delete || die
 }
