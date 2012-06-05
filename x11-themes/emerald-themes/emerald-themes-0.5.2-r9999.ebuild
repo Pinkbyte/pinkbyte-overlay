@@ -3,7 +3,7 @@
 # $Header: /var/cvsroot/gentoo-x86/x11-themes/emerald-themes/emerald-themes-0.5.2.ebuild,v 1.3 2007/10/24 18:39:26 hanno Exp $
 
 DESCRIPTION="Emerald window decorator themes"
-HOMEPAGE="http://compiz-fusion.org"
+HOMEPAGE="http://compiz.org"
 SRC_URI="http://releases.compiz-fusion.org/${PV}/${P}.tar.bz2"
 
 LICENSE="GPL-2"
