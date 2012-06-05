@@ -70,6 +70,8 @@ RDEPEND="${COMMONDEPEND}
 	x11-apps/xvinfo
 "
 
+DOCS="AUTHORS ChangeLog INSTALL NEWS README TODO"
+
 src_prepare() {
 
 	echo "gtk/gnome/compiz-wm.desktop.in" >> "${S}/po/POTFILES.skip"
@@ -123,7 +125,8 @@ src_configure() {
 }
 
 src_install() {
-	emake DESTDIR="${D}" install
+	# Run default src_install
+	default
 
 	find "${D}" -name '*.la' -delete || die
 
@@ -148,8 +151,6 @@ src_install() {
 	METACITY="$(type -p metacity)"
 	SKIP_CHECKS="yes"
 	EOF
-
-	dodoc AUTHORS ChangeLog NEWS README TODO
 
 	insinto "/usr/share/applications"
 	doins "${FILESDIR}/compiz.desktop"
