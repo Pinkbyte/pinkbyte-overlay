@@ -56,7 +56,10 @@ COMMONDEPEND="
 		>=gnome-base/librsvg-2.14.0:2
 		>=x11-libs/cairo-1.0
 	)
-	dbus? ( >=sys-apps/dbus-1.0 )
+	dbus? (
+		>=sys-apps/dbus-1.0
+		glib? ( dev-libs/dbus-glib )
+	)
 "
 
 DEPEND="${COMMONDEPEND}
