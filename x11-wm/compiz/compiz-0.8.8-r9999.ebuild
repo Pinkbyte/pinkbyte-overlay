@@ -100,10 +100,12 @@ src_configure() {
 		myconf="${myconf} --disable-gconf"
 	fi
 
+	# Add dbus-glib support only when glib support is enabled,
+	# otherwise - disable it.
 	if use glib; then
-		if use dbus; then
-			myconf="${myconf} $(use_enable dbus dbus-glib)"
-		fi
+		myconf="${myconf} $(use_enable dbus dbus-glib)"
+	else
+		myconf="${myconf} --disable-dbus-glib"
 	fi
 
 	econf \
