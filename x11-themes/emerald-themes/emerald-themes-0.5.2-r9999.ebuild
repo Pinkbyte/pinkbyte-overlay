@@ -14,4 +14,4 @@ KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
 IUSE=""
 DEPEND="x11-wm/emerald"
 
-DOCS="ChangeLog NEWS README"
+DOCS="ChangeLog INSTALL NEWS README"
