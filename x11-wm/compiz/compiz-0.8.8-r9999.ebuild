@@ -60,7 +60,7 @@ COMMONDEPEND="
 "
 
 DEPEND="${COMMONDEPEND}
-	dev-util/pkgconfig
+	virtual/pkgconfig
 	x11-proto/damageproto
 	x11-proto/xineramaproto
 "
