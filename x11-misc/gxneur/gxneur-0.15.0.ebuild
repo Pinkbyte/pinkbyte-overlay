@@ -1,4 +1,4 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
@@ -25,7 +25,7 @@ RDEPEND="${COMMON_DEPEND}
 	nls? ( virtual/libintl )"
 DEPEND="${COMMON_DEPEND}
 	nls? ( sys-devel/gettext )
-	>=dev-util/pkgconfig-0.20"
+	virtual/pkgconfig"
 
 src_prepare() {
 	rm -f m4/{lt~obsolete,ltoptions,ltsugar,ltversion,libtool}.m4 \

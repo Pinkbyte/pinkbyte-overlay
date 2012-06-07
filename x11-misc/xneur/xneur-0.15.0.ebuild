@@ -1,4 +1,4 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
@@ -37,7 +37,7 @@ RDEPEND="${COMMON_DEPEND}
 	nls? ( virtual/libintl )
 	gtk3? ( !x11-misc/gxneur )"
 DEPEND="${COMMON_DEPEND}
-	>=dev-util/pkgconfig-0.20
+	virtual/pkgconfig
 	nls? ( sys-devel/gettext )"
 
 src_prepare() {
