@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=2
+EAPI="4"
 
 inherit autotools eutils
 
@@ -39,6 +39,8 @@ RDEPEND="${COMMON_DEPEND}
 DEPEND="${COMMON_DEPEND}
 	virtual/pkgconfig
 	nls? ( sys-devel/gettext )"
+
+DOCS="AUTHORS ChangeLog README NEWS TODO"
 
 src_prepare() {
 	# Fixes error/warning: no newline at end of file
@@ -90,11 +92,6 @@ src_configure() {
 		$(use_with xosd) \
 		$(use_with libnotify) \
 		$(use_with keylogger)
-}
-
-src_install() {
-	emake DESTDIR="${D}" install || die
-	dodoc AUTHORS ChangeLog README NEWS TODO || die
 }
 
 pkg_postinst() {
