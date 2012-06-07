@@ -51,6 +51,8 @@ src_prepare() {
 	sed -i -e "s/-Werror -g0//" configure.in || die
 	# allows to select between gtk2 or gtk3, or none
 	epatch "${FILESDIR}/${PV}-select-gtk.patch"
+	# remove LDFLAGS from pkgconfig file
+	epatch "${FILESDIR}/${PN}-no-ldflags-in-pkgconfig.patch"
 	eautoreconf
 }
 
