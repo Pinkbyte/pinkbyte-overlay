@@ -55,7 +55,7 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	dev-util/intltool
 	sys-devel/gettext
-	dev-util/pkgconfig
+	virtual/pkgconfig
 "
 
 S="${WORKDIR}/${PN}-${MY_PV}"
