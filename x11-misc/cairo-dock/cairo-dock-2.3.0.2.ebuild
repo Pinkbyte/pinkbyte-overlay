@@ -1,4 +1,4 @@
-# Copyright 1999-2010 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
@@ -7,7 +7,7 @@ EAPI="2"
 inherit cmake-utils eutils versionator
 
 MY_PN="${PN}-core"
-MY_PV=$(replace_version_separator 3 '-')
+MY_PV=$(replace_version_separator 3 '~')
 MM_PV=$(get_version_component_range '1-2')
 MMD_PV=$(get_version_component_range '1-3')
 
