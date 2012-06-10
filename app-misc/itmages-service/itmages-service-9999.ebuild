@@ -9,7 +9,7 @@ PYTHON_DEPEND="2"
 inherit git-2 distutils
 
 DESCRIPTION="Scripts for uploading pictures to ITmages.ru"
-HOMEPAGE="http://www.gnu.org/software/sed/sed.html"
+HOMEPAGE="https://github.com/itmages/itmages-service"
 EGIT_REPO_URI="git://github.com/itmages/itmages-service.git"
 
 LICENSE="GPL-2"
