@@ -1,5 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
+# $Header: $
 
 EAPI=4
 
@@ -13,10 +14,10 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="kde gnome"
 
-DEPEND="sys-libs/readline
+DEPEND="sys-libs/readline"
+RDEPEND="${DEPEND}
 	kde? ( kde-base/kdesu )
 	gnome? ( x11-libs/gksu )"
-RDEPEND="${DEPEND}"
 
 src_prepare() {
 	sed -i -e "/CFLAGS/d" Makefile.am || die
