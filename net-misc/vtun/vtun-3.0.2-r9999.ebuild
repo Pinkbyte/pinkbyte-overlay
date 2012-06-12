@@ -4,7 +4,7 @@
 
 EAPI=4
 
-inherit eutils
+inherit eutils linux-info
 
 DESCRIPTION="Create virtual tunnels over TCP/IP networks with traffic shaping, encryption, and compression."
 SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
@@ -23,6 +23,8 @@ DEPEND="${RDEPEND}
 	sys-devel/bison"
 
 DOCS="ChangeLog Credits FAQ README README.Setup README.Shaper TODO"
+
+CONFIG_CHECK="~TUN"
 
 src_prepare() {
 	sed -i Makefile.in \
@@ -49,10 +51,4 @@ src_install() {
 	newinitd "${FILESDIR}"/vtun.rc vtun
 	insinto etc
 	doins "${FILESDIR}"/vtund-start.conf
-}
-
-pkg_postinst() {
-	elog "You will need the Universal TUN/TAP driver compiled into"
-	elog "your kernel or as a module to use the associated tunnel"
-	elog "modes in vtun."
 }
