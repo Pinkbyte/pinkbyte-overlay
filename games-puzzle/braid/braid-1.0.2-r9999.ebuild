@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=3
+EAPI=4
 
 inherit games
 
@@ -14,7 +14,6 @@ LICENSE="Arphic MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 
-#IUSE="video_cards_nvidia"
 IUSE=""
 RESTRICT="strip fetch"
 
@@ -27,7 +26,6 @@ RDEPEND="media-libs/libsdl[audio,joystick,video]
 	x11-libs/libXext
 	virtual/opengl
 	media-gfx/nvidia-cg-toolkit"
-#	video_cards_nvidia? ( media-gfx/nvidia-cg-toolkit )"
 
 S=${WORKDIR}/data
 
@@ -51,13 +49,12 @@ src_install() {
 	insinto "${dir}"
 	exeinto "${dir}"
 
-	doins -r gamedata/data || die "doins failed"
-	if use x86; then doexe x86/"${PN}" || die "doexe failed"; fi
-	if use amd64; then doexe amd64/"${PN}" || die "doexe failed"; fi
+	doins -r gamedata/data
+	use x86 && doexe x86/"${PN}"
+	use amd64 && doexe amd64/"${PN}"
 
-	doicon gamedata/"${PN}.png" || die "doicon failed"
-
-	dodoc gamedata/README-linux.txt || die "dodoc failed"
+	doicon gamedata/"${PN}.png"
+	dodoc gamedata/README-linux.txt
 
 	games_make_wrapper "${PN}" "./${PN}" "${dir}"
 	make_desktop_entry "${PN}" "Braid" "${PN}"
