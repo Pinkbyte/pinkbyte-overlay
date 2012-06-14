@@ -6,15 +6,18 @@ EAPI=4
 
 inherit games
 
+MY_PV=${PV/1.0./}
+
 DESCRIPTION="Platform game where you manipulate flow of time"
 HOMEPAGE="http://braid-game.com"
-SRC_URI="${PN}-linux-build${PV/1.0./}.run.bin"
+SRC_URI="${PN}-linux-build${MY_PV}.run.bin
+	linguas_ru? ( ${PN}-rus.tar.bz2 )"
 
 LICENSE="Arphic MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 
-IUSE=""
+IUSE="linguas_ru"
 RESTRICT="strip fetch"
 
 DEPEND="app-arch/unzip"
@@ -37,10 +40,16 @@ pkg_nofetch() {
 
 src_unpack() {
 	# self unpacking zip archive; unzip warns about the exe stuff
-	local a="${DISTDIR}/${A}"
+	local a="${DISTDIR}/${PN}-linux-build${MY_PV}.run.bin"
 	echo ">>> Unpacking ${a} to ${PWD}"
 	unzip -q "${a}"
 	[ $? -gt 1 ] && die "unpacking failed"
+
+	if use linguas_ru; then
+		unpack "${PN}-rus.tar.bz2"
+		mv "${S}/package0.zip" "${S}/gamedata/data"
+		mv "${S}/strings/english.mo" "${S}/gamedata/data/strings"
+	fi
 }
 
 src_install() {
