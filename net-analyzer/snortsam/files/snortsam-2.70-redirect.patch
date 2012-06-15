@@ -1,7 +1,25 @@
 diff -ur snortsam-2.7.0-orig/src/snortsam.c snortsam/src/snortsam.c
 --- snortsam-2.7.0-orig/src/snortsam.c	2012-05-20 20:59:46.277029000 +0400
-+++ snortsam/src/snortsam.c	2012-05-25 16:16:59.411043000 +0400
-@@ -2467,6 +2467,7 @@
++++ snortsam/src/snortsam.c	2012-06-15 18:23:29.653032000 +0400
+@@ -1971,7 +1971,7 @@
+ void block(SENSORLIST *snortbox,unsigned long bsip,unsigned short bsport,
+ 		   unsigned long bdip,unsigned short bdport,
+ 		   unsigned short bproto,time_t bduration,unsigned char bmode,
+-		   time_t btime,unsigned long bsig_id)
++		   time_t btime,unsigned long bsig_id,char packstat)
+ {	unsigned long peerip,blockip;
+ 	unsigned short blockport;
+ 	time_t t;
+@@ -2022,6 +2022,8 @@
+ 	blockdata.blocktime=btime;
+ 	blockdata.sig_id=bsig_id;
+ 	blockdata.block=TRUE;
++	// Add type of block(simple block or redirect)
++	blockdata.type=packstat;
+ 
+ 	/* check for and get a blocktime limit out of the limit list based on the sensor*/
+ 	blockdata.duration=limit_duration_on_sensor(snortbox->snortip.s_addr,bduration);	
+@@ -2467,6 +2469,7 @@
  		printf("Debug: Received Packet: %s\n",packet.status==FWSAM_STATUS_CHECKIN?"CHECKIN":
  											  packet.status==FWSAM_STATUS_CHECKOUT?"CHECKOUT":
  											  packet.status==FWSAM_STATUS_BLOCK?"BLOCK":
@@ -9,7 +27,7 @@ diff -ur snortsam-2.7.0-orig/src/snortsam.c snortsam/src/snortsam.c
  											  packet.status==FWSAM_STATUS_UNBLOCK?"UNBLOCK":"**UNKNOWN**");
  		printf("Debug: Snort SeqNo:  %x\n",packet.snortseqno[0]|(packet.snortseqno[1]<<8));
  		printf("Debug: Mgmt SeqNo :  %x\n",packet.fwseqno[0]|(packet.fwseqno[1]<<8));
-@@ -2512,11 +2513,12 @@
+@@ -2512,11 +2515,12 @@
  				snortbox->toberemoved=TRUE;				/* Mark sensor for removal from list. */
  				ret=FALSE;
  			}
@@ -24,9 +42,21 @@ diff -ur snortsam-2.7.0-orig/src/snortsam.c snortsam/src/snortsam.c
  #endif
  					bmode=packet.fwmode;			/* save parameters from packet */
  					if(packet.endiancheck==1)		/* Check if peer has the same endianess */
+@@ -2604,9 +2608,9 @@
+ 					}
+ 					else
+ 					{
+-						if(packstat==FWSAM_STATUS_BLOCK)
++						if(packstat==FWSAM_STATUS_BLOCK || packstat==FWSAM_STATUS_REDIRECT)
+ 						{	/* call block, which performs checks */
+-							block(snortbox,bsip,bsport,bdip,bdport,bproto,bduration,bmode,mytime,bsig_id);
++							block(snortbox,bsip,bsport,bdip,bdport,bproto,bduration,bmode,mytime,bsig_id,packstat);
+ 						}
+ 						else
+ 						{	
 diff -ur snortsam-2.7.0-orig/src/snortsam.h snortsam/src/snortsam.h
 --- snortsam-2.7.0-orig/src/snortsam.h	2012-05-20 20:59:46.278524000 +0400
-+++ snortsam/src/snortsam.h	2012-05-20 21:01:02.273330000 +0400
++++ snortsam/src/snortsam.h	2012-06-15 18:30:41.524502000 +0400
 @@ -242,6 +242,7 @@
  #define FWSAM_STATUS_CHECKOUT	2
  #define FWSAM_STATUS_BLOCK		3
@@ -35,3 +65,436 @@ diff -ur snortsam-2.7.0-orig/src/snortsam.h snortsam/src/snortsam.h
  
  #define FWSAM_STATUS_OK			4	/* fw to snort */
  #define FWSAM_STATUS_ERROR		5
+@@ -291,6 +292,7 @@
+ 	unsigned short proto;		/* Protocol (if connection) */
+ 	unsigned short mode;			/* Blocking mode (src, dst, connection) */
+ 	short block;					/* block or unblock flag --- this flag is dynamically changed */
++	char type;			/* Type of block - simple block or redirect. Taken from incoming packet status */
+ }	BLOCKINFO;
+ 
+ typedef struct _oldblockinfo		/* Block info structure */
+@@ -495,7 +497,7 @@
+ void block(SENSORLIST *snortbox,unsigned long bsip,unsigned short bsport,
+ 		   unsigned long bdip,unsigned short bdport,
+ 		   unsigned short bproto,time_t bduration,unsigned char bmode,
+-		   time_t btime,unsigned long bsig_id);
++		   time_t btime,unsigned long bsig_id,char packstat);
+ void unblock(BLOCKINFO *bhp,char *comment,unsigned long reqip,int force);
+ void addtohistory(BLOCKHISTORY *,int);
+ void clearhistory(void);
+diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
+--- snortsam-2.7.0-orig/src/ssp_iptables.c	2012-05-20 20:59:46.275601000 +0400
++++ snortsam/src/ssp_iptables.c	2012-06-15 19:58:38.620383000 +0400
+@@ -123,204 +123,214 @@
+ 	printf("Debug: [iptables][%lx] Plugin Blocking...\n",threadid);
+ #endif
+ 
+-	if(bd->block)
+-	{ snprintf(msg,sizeof(msg)-1,"Info: Blocking ip %s", inettoa(bd->blockip));
+-	  logmessage(3,msg,"iptables",0);
+-
+-	  switch(bd->mode&FWSAM_HOW)
+-		{	case FWSAM_HOW_IN:	
+-	  /* Assemble command */
+-	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -I FORWARD -i %s  -s %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -I INPUT -i %s  -s %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		  break;
+-		  case FWSAM_HOW_OUT:	
+-	  /* Assemble command */
+-	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -I FORWARD -i %s  -d %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -I INPUT -i %s  -d %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		  break;
+-		  case FWSAM_HOW_INOUT:	
+-	  /* Assemble command - block src*/
+-		if ((snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -I FORWARD -i %s  -s %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) || (snprintf(iptcmd1,sizeof(iptcmd1)-1,
+-		"/sbin/iptables -I FORWARD -i %s  -d %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd1))) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		if ((snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -I INPUT -i %s  -s %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) || (snprintf(iptcmd4,sizeof(iptcmd4)-1,
+-		"/sbin/iptables -I INPUT -i %s  -d %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd4))) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		  break;
+-		  case FWSAM_HOW_THIS:	
+-	  /* Assemble command */
+-	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -I FORWARD -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
+- 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -I INPUT -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
+- 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd2)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		  break;
+-		  }
+-	} 
+-	else 
+-	{
+-	  snprintf(msg,sizeof(msg)-1,"Info: UnBlocking ip %s", inettoa(bd->blockip));
+-	  logmessage(1,msg,"iptables",0);
+-switch(bd->mode&FWSAM_HOW)
+-	{	case FWSAM_HOW_IN:	
+-          /* Assemble command */
+-          if (snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -D FORWARD -i %s  -s %s -j DROP",
+-	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-        }
+-	    if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -D INPUT -i %s  -s %s -j DROP",
+-	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-	    }
+-		break;
+-		case FWSAM_HOW_OUT:	
+-		 /* Assemble command */
+-          if (snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -D FORWARD -i %s  -d %s -j DROP",
+-	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-        }
+-	    if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -D INPUT -i %s  -d %s -j DROP",
+-	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-	    }
+-		break;
+-		case FWSAM_HOW_INOUT:	
+-	  /* Assemble command - block src*/
+-		if ((snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -D FORWARD -i %s  -s %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) || (snprintf(iptcmd1,sizeof(iptcmd1)-1,
+-		"/sbin/iptables -D FORWARD -i %s  -d %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd1))) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		if ((snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -D INPUT -i %s  -s %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) || (snprintf(iptcmd4,sizeof(iptcmd4)-1,
+-		"/sbin/iptables -D INPUT -i %s  -d %s -j DROP",
+- 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd4))) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		  break;
+-		  case FWSAM_HOW_THIS:	
+-	  /* Assemble command */
+-	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
+-		"/sbin/iptables -D FORWARD -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
+- 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
+-		"/sbin/iptables -D INPUT -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
+- 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd)) {
+-                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
+-                logmessage(1,msg,"iptables",0);
+-		return;
+-          }
+-		  break;
+-		}
+-	}
+-#ifdef FWSAMDEBUG
+-        printf("Debug: [iptables][%lx] command  %s\n", threadid, iptcmd);
+-        printf("Debug: [iptables][%lx] command2 %s\n", threadid, iptcmd2);
+-#endif
+-	/* Run the command */
+-        if (system(iptcmd) != 0) { 
+-		snprintf(msg,sizeof(msg)-1,"Error: Command %s Failed", iptcmd);
+-		logmessage(3,msg,"iptables",0);
+-	} else {
+-                snprintf(msg,sizeof(msg)-1,"Info: Command %s Executed Successfully", iptcmd);
+-                logmessage(3,msg,"iptables",0);
+-	}
+-        if (system(iptcmd2) != 0) { 
+-		snprintf(msg,sizeof(msg)-1,"Error: Command2 %s Failed", iptcmd2);
+-		logmessage(1,msg,"iptables",0);
+-	} else {
+-                snprintf(msg,sizeof(msg)-1,"Info: Command2 %s Executed Successfully", iptcmd2);
+-                logmessage(3,msg,"iptables",0);
+-	}
+-
+-/*inventiva-recorte*/
+-	if((bd->mode&FWSAM_HOW)==FWSAM_HOW_INOUT)
+-	{
+-		if (system(iptcmd1) != 0) { 
+-			snprintf(msg,sizeof(msg)-1,"Error: Command %s Failed", iptcmd1);
+-			logmessage(3,msg,"iptables",0);
+-		} else {
+-					snprintf(msg,sizeof(msg)-1,"Info: Command %s Executed Successfully", iptcmd1);
+-					logmessage(3,msg,"iptables",0);
+-		}
+-			if (system(iptcmd4) != 0) { 
+-			snprintf(msg,sizeof(msg)-1,"Error: Command2 %s Failed", iptcmd4);
+-			logmessage(1,msg,"iptables",0);
+-		} else {
+-				snprintf(msg,sizeof(msg)-1,"Info: Command2 %s Executed Successfully", iptcmd4);
+-                logmessage(3,msg,"iptables",0);
+-		}
+-	}
+-
+-
++	if(bd->block)
++	{ snprintf(msg,sizeof(msg)-1,"Info: Blocking ip %s", inettoa(bd->blockip));
++	  logmessage(3,msg,"iptables",0);
++
++	  switch(bd->mode&FWSAM_HOW)
++		{	case FWSAM_HOW_IN:	
++	  /* Assemble command */
++	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
++		"/sbin/iptables -I FORWARD -i %s  -s %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -I INPUT -i %s  -s %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++		  break;
++		  case FWSAM_HOW_OUT:	
++	  /* Assemble command */
++	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
++		"/sbin/iptables -I FORWARD -i %s  -d %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -I INPUT -i %s  -d %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++		  break;
++		  case FWSAM_HOW_INOUT:	
++{
++	  char* cmdstr_fwd;
++	  char cmdstr_fwd_redirect[]="/sbin/iptables -t mangle -I PREROUTING -i %s  -s %s -j MARK --set-mark 255";
++	  char cmdstr_fwd_block[]="/sbin/iptables -I FORWARD -i %s  -s %s -j DROP";
++	  if (bd->type==FWSAM_STATUS_BLOCK)
++		cmdstr_fwd=cmdstr_fwd_block;
++	  else
++		cmdstr_fwd=cmdstr_fwd_redirect;
++	  /* Assemble command - block src*/
++		if ((snprintf(iptcmd,sizeof(iptcmd)-1,
++		cmdstr_fwd,
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) || (snprintf(iptcmd1,sizeof(iptcmd1)-1,
++		"/sbin/iptables -I FORWARD -i %s  -d %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd1))) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++	      if (bd->type==FWSAM_STATUS_BLOCK)
++		if ((snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -I INPUT -i %s  -s %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) || (snprintf(iptcmd4,sizeof(iptcmd4)-1,
++		"/sbin/iptables -I INPUT -i %s  -d %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd4))) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++}
++		  break;
++		  case FWSAM_HOW_THIS:	
++	  /* Assemble command */
++	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
++		"/sbin/iptables -I FORWARD -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
++ 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -I INPUT -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
++ 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd2)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++		  break;
++		  }
++	} 
++	else 
++	{
++	  snprintf(msg,sizeof(msg)-1,"Info: UnBlocking ip %s", inettoa(bd->blockip));
++	  logmessage(1,msg,"iptables",0);
++switch(bd->mode&FWSAM_HOW)
++	{	case FWSAM_HOW_IN:	
++          /* Assemble command */
++          if (snprintf(iptcmd,sizeof(iptcmd)-1,
++		"/sbin/iptables -D FORWARD -i %s  -s %s -j DROP",
++	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++        }
++	    if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -D INPUT -i %s  -s %s -j DROP",
++	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++	    }
++		break;
++		case FWSAM_HOW_OUT:	
++		 /* Assemble command */
++          if (snprintf(iptcmd,sizeof(iptcmd)-1,
++		"/sbin/iptables -D FORWARD -i %s  -d %s -j DROP",
++	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++        }
++	    if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -D INPUT -i %s  -d %s -j DROP",
++	  	iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++	    }
++		break;
++		case FWSAM_HOW_INOUT:	
++	  /* Assemble command - block src*/
++		if ((snprintf(iptcmd,sizeof(iptcmd)-1,
++		"/sbin/iptables -D FORWARD -i %s  -s %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) || (snprintf(iptcmd1,sizeof(iptcmd1)-1,
++		"/sbin/iptables -D FORWARD -i %s  -d %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd1))) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++		if ((snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -D INPUT -i %s  -s %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) || (snprintf(iptcmd4,sizeof(iptcmd4)-1,
++		"/sbin/iptables -D INPUT -i %s  -d %s -j DROP",
++ 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd4))) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++		  break;
++		  case FWSAM_HOW_THIS:	
++	  /* Assemble command */
++	  if (snprintf(iptcmd,sizeof(iptcmd)-1,
++		"/sbin/iptables -D FORWARD -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
++ 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command %s is too long", iptcmd);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++	  if (snprintf(iptcmd2,sizeof(iptcmd2)-1,
++		"/sbin/iptables -D INPUT -i %s  -s %s  -d %s  -p %d  --dport %d -j DROP",
++ 		iptp->iface, inettoa(bd->blockip), inettoa(bd->peerip), bd->proto, bd->port) >= sizeof(iptcmd)) {
++                snprintf(msg,sizeof(msg)-1,"Error: Command2 %s is too long", iptcmd2);
++                logmessage(1,msg,"iptables",0);
++		return;
++          }
++		  break;
++		}
++	}
++#ifdef FWSAMDEBUG
++        printf("Debug: [iptables][%lx] command  %s\n", threadid, iptcmd);
++        printf("Debug: [iptables][%lx] command2 %s\n", threadid, iptcmd2);
++#endif
++	/* Run the command */
++        if (system(iptcmd) != 0) { 
++		snprintf(msg,sizeof(msg)-1,"Error: Command %s Failed", iptcmd);
++		logmessage(3,msg,"iptables",0);
++	} else {
++                snprintf(msg,sizeof(msg)-1,"Info: Command %s Executed Successfully", iptcmd);
++                logmessage(3,msg,"iptables",0);
++	}
++        if (system(iptcmd2) != 0) { 
++		snprintf(msg,sizeof(msg)-1,"Error: Command2 %s Failed", iptcmd2);
++		logmessage(1,msg,"iptables",0);
++	} else {
++                snprintf(msg,sizeof(msg)-1,"Info: Command2 %s Executed Successfully", iptcmd2);
++                logmessage(3,msg,"iptables",0);
++	}
++
++/*inventiva-recorte*/
++	if((bd->mode&FWSAM_HOW)==FWSAM_HOW_INOUT)
++	{
++		if (system(iptcmd1) != 0) { 
++			snprintf(msg,sizeof(msg)-1,"Error: Command %s Failed", iptcmd1);
++			logmessage(3,msg,"iptables",0);
++		} else {
++					snprintf(msg,sizeof(msg)-1,"Info: Command %s Executed Successfully", iptcmd1);
++					logmessage(3,msg,"iptables",0);
++		}
++			if (system(iptcmd4) != 0) { 
++			snprintf(msg,sizeof(msg)-1,"Error: Command2 %s Failed", iptcmd4);
++			logmessage(1,msg,"iptables",0);
++		} else {
++				snprintf(msg,sizeof(msg)-1,"Info: Command2 %s Executed Successfully", iptcmd4);
++                logmessage(3,msg,"iptables",0);
++		}
++	}
++
++
+ #ifdef SAVETABLES
+ /* Save command */    
+         if (system(savecmd) != 0) {
