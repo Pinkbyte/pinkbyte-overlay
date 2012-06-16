@@ -4,9 +4,9 @@
 
 EAPI=4
 
-inherit games
+inherit games versionator
 
-MY_PV=${PV/1.0./}
+MY_PV="$(get_version_component_range 3)"
 
 DESCRIPTION="Platform game where you manipulate flow of time"
 HOMEPAGE="http://braid-game.com"
