@@ -84,8 +84,8 @@ diff -ur snortsam-2.7.0-orig/src/snortsam.h snortsam/src/snortsam.h
  void clearhistory(void);
 diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
 --- snortsam-2.7.0-orig/src/ssp_iptables.c	2012-05-20 20:59:46.275601000 +0400
-+++ snortsam/src/ssp_iptables.c	2012-06-15 19:58:38.620383000 +0400
-@@ -123,204 +123,214 @@
++++ snortsam/src/ssp_iptables.c	2012-06-16 16:53:06.430453000 +0400
+@@ -123,204 +123,227 @@
  	printf("Debug: [iptables][%lx] Plugin Blocking...\n",threadid);
  #endif
  
@@ -380,6 +380,7 @@ diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
 +	{
 +	  snprintf(msg,sizeof(msg)-1,"Info: UnBlocking ip %s", inettoa(bd->blockip));
 +	  logmessage(1,msg,"iptables",0);
++
 +switch(bd->mode&FWSAM_HOW)
 +	{	case FWSAM_HOW_IN:	
 +          /* Assemble command */
@@ -416,9 +417,17 @@ diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
 +	    }
 +		break;
 +		case FWSAM_HOW_INOUT:	
++{
++	  char* cmdstr_fwd;
++	  char cmdstr_fwd_unredirect[]="/sbin/iptables -t mangle -D PREROUTING -i %s  -s %s -j MARK --set-mark 255";
++	  char cmdstr_fwd_unblock[]="/sbin/iptables -D FORWARD -i %s  -s %s -j DROP";
++	  if (bd->type==FWSAM_STATUS_BLOCK)
++		cmdstr_fwd=cmdstr_fwd_unblock;
++	  else
++		cmdstr_fwd=cmdstr_fwd_unredirect;
 +	  /* Assemble command - block src*/
 +		if ((snprintf(iptcmd,sizeof(iptcmd)-1,
-+		"/sbin/iptables -D FORWARD -i %s  -s %s -j DROP",
++		cmdstr_fwd,
 + 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd)) || (snprintf(iptcmd1,sizeof(iptcmd1)-1,
 +		"/sbin/iptables -D FORWARD -i %s  -d %s -j DROP",
 + 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd1))) {
@@ -426,6 +435,7 @@ diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
 +                logmessage(1,msg,"iptables",0);
 +		return;
 +          }
++	      if (bd->type==FWSAM_STATUS_BLOCK)
 +		if ((snprintf(iptcmd2,sizeof(iptcmd2)-1,
 +		"/sbin/iptables -D INPUT -i %s  -s %s -j DROP",
 + 		iptp->iface, inettoa(bd->blockip)) >= sizeof(iptcmd2)) || (snprintf(iptcmd4,sizeof(iptcmd4)-1,
@@ -435,6 +445,7 @@ diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
 +                logmessage(1,msg,"iptables",0);
 +		return;
 +          }
++}
 +		  break;
 +		  case FWSAM_HOW_THIS:	
 +	  /* Assemble command */
@@ -467,7 +478,8 @@ diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
 +                snprintf(msg,sizeof(msg)-1,"Info: Command %s Executed Successfully", iptcmd);
 +                logmessage(3,msg,"iptables",0);
 +	}
-+        if (system(iptcmd2) != 0) { 
++        if (bd->type==FWSAM_STATUS_BLOCK)
++          if (system(iptcmd2) != 0) { 
 +		snprintf(msg,sizeof(msg)-1,"Error: Command2 %s Failed", iptcmd2);
 +		logmessage(1,msg,"iptables",0);
 +	} else {
@@ -485,6 +497,7 @@ diff -ur snortsam-2.7.0-orig/src/ssp_iptables.c snortsam/src/ssp_iptables.c
 +					snprintf(msg,sizeof(msg)-1,"Info: Command %s Executed Successfully", iptcmd1);
 +					logmessage(3,msg,"iptables",0);
 +		}
++                      if (bd->type==FWSAM_STATUS_BLOCK)
 +			if (system(iptcmd4) != 0) { 
 +			snprintf(msg,sizeof(msg)-1,"Error: Command2 %s Failed", iptcmd4);
 +			logmessage(1,msg,"iptables",0);
