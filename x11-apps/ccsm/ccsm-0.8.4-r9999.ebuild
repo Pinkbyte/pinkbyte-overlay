@@ -19,7 +19,6 @@ IUSE=""
 DEPEND="
 	>=dev-python/compizconfig-python-${PV}
 	>=dev-python/pygtk-2.12:2
-	dev-python/sexy-python
 	gnome-base/librsvg
 "
 RDEPEND="${DEPEND}"
