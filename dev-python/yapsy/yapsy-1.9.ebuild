@@ -6,7 +6,7 @@ EAPI="3"
 
 inherit distutils
 
-DESCRIPTION="Yapsy is a small library implementing the core mechanisms needed to build a plugin system into a wider application."
+DESCRIPTION="A fat-free DIY Python plugin management toolkit"
 HOMEPAGE="http://yapsy.sourceforge.net/"
 SRC_URI="mirror://sourceforge/yapsy/Yapsy-${PV}/Yapsy-${PV}.tar.gz"
 
@@ -14,8 +14,8 @@ LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
-DEPEND=""
-RDEPEND="${DEPEND}"
+DEPEND="dev-python/setuptools"
+RDEPEND=""
 S="${WORKDIR}/Yapsy-${PV}"
 
 DOCS="PKG-INFO README.txt"
