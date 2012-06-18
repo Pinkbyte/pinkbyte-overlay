@@ -35,6 +35,7 @@ pkg_setup() {
 	enewuser 'err' -1 -1 -1 'err'
 	eend ${?}
 }
+
 src_install() {
 	distutils_src_install
 	newinitd "${FILESDIR}"/errd.initd errd
