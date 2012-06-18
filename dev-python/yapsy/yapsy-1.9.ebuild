@@ -4,6 +4,12 @@
 
 EAPI="4"
 
+DISTUTILS_SRC_TEST="setup.py"
+
+SUPPORT_PYTHON_ABIS="1"
+PYTHON_DEPEND="2"
+RESTRICT_PYTHON_ABIS="3.*"
+
 inherit distutils
 
 DESCRIPTION="A fat-free DIY Python plugin management toolkit"
