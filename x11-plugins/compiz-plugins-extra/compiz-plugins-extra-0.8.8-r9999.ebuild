@@ -54,7 +54,7 @@ src_configure() {
 
 src_install() {
 	default
-	find "${D}" -name '*.la' -delete || die
+	prune_libtool_files
 }
 
 pkg_preinst() {
