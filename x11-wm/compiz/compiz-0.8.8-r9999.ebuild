@@ -19,7 +19,7 @@ COMMONDEPEND="
 	dev-libs/glib:2
 	dev-libs/libxml2:2
 	dev-libs/libxslt
-	media-libs/libpng
+	media-libs/libpng:0
 	>=media-libs/mesa-6.5.1-r1
 	>=x11-base/xorg-server-1.1.1-r1
 	>=x11-libs/libX11-1.4
@@ -76,9 +76,8 @@ RDEPEND="${COMMONDEPEND}
 DOCS="AUTHORS ChangeLog INSTALL NEWS README TODO"
 
 src_prepare() {
-
-	echo "gtk/gnome/compiz-wm.desktop.in" >> "${S}/po/POTFILES.skip"
-	echo "metadata/core.xml.in" >> "${S}/po/POTFILES.skip"
+	echo "gtk/gnome/compiz-wm.desktop.in" >> "po/POTFILES.skip"
+	echo "metadata/core.xml.in" >> "po/POTFILES.skip"
 
 	if ! use gnome || ! use gconf; then
 		epatch "${FILESDIR}"/${PN}-no-gconf.patch
@@ -155,8 +154,7 @@ src_install() {
 	SKIP_CHECKS="yes"
 	EOF
 
-	insinto "/usr/share/applications"
-	doins "${FILESDIR}/compiz.desktop"
+	domenu "${FILESDIR}/compiz.desktop"
 }
 
 pkg_preinst() {
