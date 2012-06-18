@@ -4,6 +4,8 @@
 
 EAPI="4"
 
+inherit eutils
+
 DESCRIPTION="Compiz Configuration System"
 HOMEPAGE="http://www.compiz.org/"
 SRC_URI="http://releases.compiz.org/${PV}/${P}.tar.bz2"
@@ -35,5 +37,5 @@ src_configure() {
 
 src_install() {
 	default
-	find "${D}" -name '*.la' -delete || die
+	prune_libtool_files
 }
