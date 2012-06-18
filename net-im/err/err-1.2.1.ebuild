@@ -7,7 +7,7 @@ EAPI=4
 DISTUTILS_SRC_TEST="setup.py"
 
 SUPPORT_PYTHON_ABIS="1"
-PYTHON_DEPEND="2"
+PYTHON_DEPEND="2:2.7"
 RESTRICT_PYTHON_ABIS="3.*"
 
 inherit distutils eutils user
