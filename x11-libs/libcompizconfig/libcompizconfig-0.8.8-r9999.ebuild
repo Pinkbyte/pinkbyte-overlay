@@ -32,6 +32,7 @@ DOCS="AUTHORS ChangeLog INSTALL NEWS README"
 src_configure() {
 	econf \
 		--enable-fast-install \
+		--enable-protobuf \
 		--disable-static
 }
 
