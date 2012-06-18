@@ -23,5 +23,3 @@ IUSE=""
 DEPEND="dev-python/setuptools"
 RDEPEND=""
 S="${WORKDIR}/Yapsy-${PV}"
-
-DOCS="PKG-INFO README.txt"
