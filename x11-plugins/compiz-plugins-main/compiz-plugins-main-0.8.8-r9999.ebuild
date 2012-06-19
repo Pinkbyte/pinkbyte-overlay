@@ -41,7 +41,6 @@ src_prepare() {
 
 src_configure() {
 	econf \
-		--disable-dependency-tracking \
 		--enable-fast-install \
 		--disable-static \
 		$(use_enable gconf schemas)
