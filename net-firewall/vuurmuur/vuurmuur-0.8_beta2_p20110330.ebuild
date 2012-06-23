@@ -1,5 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
+# $Header: $
 
 EAPI="4"
 
@@ -50,27 +51,27 @@ src_configure() {
 }
 
 src_compile() {
-	emake -C "../${PN}-conf-${REL_TAG}" || die "compiling vuurmuur_conf failed"
+	emake -C "../${PN}-conf-${REL_TAG}"
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "installing vuurmuur failed"
+	emake DESTDIR="${D}" install
 
-	newinitd "${FILESDIR}"/vuurmuur.init vuurmuur || die "installing init failed"
-	newconfd "${FILESDIR}"/vuurmuur.conf vuurmuur || die "installing conf failed"
+	newinitd "${FILESDIR}"/vuurmuur.init vuurmuur
+	newconfd "${FILESDIR}"/vuurmuur.conf vuurmuur
 
 	if use logrotate; then
 		insinto /etc/logrotate.d
-		newins scripts/vuurmuur-logrotate vuurmuur || die "installing logrotate config failed"
+		newins scripts/vuurmuur-logrotate vuurmuur
 	fi
 
 	insopts -m0600
 	insinto /etc/vuurmuur
-	newins config/config.conf.sample config.conf || die "installing config.conf failed"
+	newins config/config.conf.sample config.conf
 
 	cd "../${PN}-conf-${REL_TAG}"
 
-	emake DESTDIR="${D}" install || die "installing vuurmuur_conf failed"
+	emake DESTDIR="${D}" install
 }
 
 pkg_postinst() {
