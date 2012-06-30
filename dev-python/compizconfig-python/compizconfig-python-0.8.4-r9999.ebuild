@@ -1,8 +1,8 @@
-# Copyright 1999-2010 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/dev-python/compizconfig-python/compizconfig-python-0.8.4-r3.ebuild,v 1.1 2010/09/08 22:18:08 flameeyes Exp $
+# $Header: $
 
-EAPI="3"
+EAPI="4"
 
 PYTHON_DEPEND="2"
 SUPPORT_PYTHON_ABIS="1"
@@ -27,11 +27,10 @@ RDEPEND="
 
 DEPEND="${RDEPEND}
 	dev-python/pyrex
-	dev-util/pkgconfig"
+	virtual/pkgconfig"
 
 src_configure() {
 	python_src_configure \
-		--disable-dependency-tracking \
 		--enable-fast-install \
 		--disable-static
 }

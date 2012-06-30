@@ -1,8 +1,8 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/x11-wm/emerald/emerald-0.8.4-r2.ebuild,v 1.4 2011/09/14 20:47:24 ssuominen Exp $
 
-EAPI="2"
+EAPI="4"
 
 inherit eutils
 
@@ -27,28 +27,25 @@ RDEPEND="
 
 DEPEND="${RDEPEND}
 	>=dev-util/intltool-0.35
-	>=dev-util/pkgconfig-0.19
+	virtual/pkgconfig
 	>=sys-devel/gettext-0.15
 "
+
+DOCS="AUTHORS ChangeLog INSTALL NEWS README TODO"
 
 src_prepare() {
 	# Fix pkg-config file pollution wrt #380197
 	epatch "${FILESDIR}"/${P}-pkgconfig-pollution.patch
-	# fix build with gtk+-2.22 - bug 341143
-	sed -i -e '/#define G[DT]K_DISABLE_DEPRECATED/s:^://:' \
-		include/emerald.h || die
 }
 
 src_configure() {
 	econf \
-		--disable-dependency-tracking \
 		--disable-static \
 		--enable-fast-install \
-		--disable-mime-update || die "econf failed"
+		--disable-mime-update
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "emake install failed"
-
-	find "${D}" -name '*.la' -delete || die
+	default
+	prune_libtool_files
 }

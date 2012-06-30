@@ -1,16 +1,16 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/x11-apps/fusion-icon/fusion-icon-0.1-r2.ebuild,v 1.1 2011/11/13 14:26:29 flameeyes Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2"
 
-inherit distutils gnome2-utils
+inherit distutils eutils gnome2-utils
 
 MINIMUM_COMPIZ_RELEASE=0.6.0
 
 DESCRIPTION="Compiz Fusion Tray Icon and Manager"
-HOMEPAGE="http://compiz-fusion.org"
+HOMEPAGE="http://compiz.org"
 SRC_URI="mirror://gentoo/${P}.tar.gz"
 
 LICENSE="GPL-2"
@@ -35,6 +35,10 @@ PYTHON_MODNAME="FusionIcon"
 pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
+}
+
+src_prepare() {
+	use qt4 && epatch "${FILESDIR}/${P}-qt4-interface-subprocess-call.patch"
 }
 
 src_install() {
