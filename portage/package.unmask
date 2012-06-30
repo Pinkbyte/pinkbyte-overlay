@@ -10,6 +10,5 @@ x11-plugins/compiz-plugins-extra::pinkbyte
 x11-plugins/compiz-plugins-main::pinkbyte
 x11-plugins/compiz-plugins-unsupported::pinkbyte
 x11-themes/emerald-themes::pinkbyte
-x11-wm/compiz::pinkbyte
 x11-wm/compiz-fusion::pinkbyte
 x11-wm/emerald::pinkbyte
