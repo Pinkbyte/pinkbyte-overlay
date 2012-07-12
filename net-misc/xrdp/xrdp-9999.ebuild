@@ -1,6 +1,6 @@
-# Copyright 1999-2009 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id $
+# $Header: $
 
 EAPI="2"
 
@@ -36,16 +36,16 @@ src_unpack() {
 
 	# fix makefile problem in sesrun
 	epatch "${FILESDIR}/xrdp-9999-002-sesrun-config.patch"
-	
+
 	# fix sandbox security violation issues
         epatch "${FILESDIR}/xrdp-9999-001-sandbox-violation.patch"
 
 	# domain as module name non-auto fix, and hidden modules patch
 	epatch "${FILESDIR}/xrdp-9999-003-domain-as-module-name-noauto-fix-and-hidden-option.patch"
-	
+
 	# ignore client auth when module has preset
 	# No longer required as it has been merged into CVS HEAD
-	# xrdp/xrdp/xrdp_wm.c r1.63, Thu May 28 21:01:01 2009 UTC 
+	# xrdp/xrdp/xrdp_wm.c r1.63, Thu May 28 21:01:01 2009 UTC
 	#epatch "${FILESDIR}/xrdp-9999-004-ignore-client-auth-on-preset.patch"
 
 	autoreconf -fvi
