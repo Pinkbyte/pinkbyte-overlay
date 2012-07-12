@@ -4,11 +4,12 @@
 
 EAPI="4"
 
-inherit eutils rpm
+inherit eutils
 
 DESCRIPTION="A squid redirector used for blocking unwanted content"
 HOMEPAGE="http://rejik.ru/"
-SRC_URI="http://centos.alt.ru/repository/centos/6/SRPMS/rejik-3.2.10-1.el6.src.rpm"
+SRC_URI="http://rejik.ru/download/redirector-${PV}.tgz
+http://rejik.ru/download/banlists-2.x.x.tgz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -58,8 +59,7 @@ src_install() {
 
 	if use banlists; then
 		insinto /opt/rejik
-		dosym /opt/rejik/blacklists /opt/rejik/banlists
-		doins -r "${WORKDIR}/blacklists"
+		doins -r "${WORKDIR}/banlists"
 	fi
 }
 
