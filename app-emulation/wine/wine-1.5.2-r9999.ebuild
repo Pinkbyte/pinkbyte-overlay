@@ -29,7 +29,8 @@ SRC_URI="${SRC_URI}
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="alsa capi cups custom-cflags elibc_glibc fontconfig +gecko gnutls gphoto2 gsm gstreamer hardened jpeg lcms ldap mp3 ncurses nls odbc openal opencl +opengl +oss +perl png samba scanner selinux ssl test +threads +truetype udisks v4l +win32 +win64 +X xcomposite xinerama xml"
+# Pinkbyte: add fglrx VIDEO_CARDS use
+IUSE="alsa capi cups custom-cflags elibc_glibc fontconfig +gecko gnutls gphoto2 gsm gstreamer hardened jpeg lcms ldap mp3 ncurses nls odbc openal opencl +opengl +oss +perl png samba scanner selinux ssl test +threads +truetype udisks v4l video_cards_fglrx +win32 +win64 +X xcomposite xinerama xml"
 REQUIRED_USE="elibc_glibc? ( threads )" #286560
 RESTRICT="test" #72375
 
@@ -128,6 +129,9 @@ src_prepare() {
 	epatch "${FILESDIR}"/${P}-raw_input_mod.patch
 	# Pinkbyte: fix perfomance problems with vertex buffers
 	epatch "${FILESDIR}"/disable-dynamic-vertex-buffers.patch
+	# Pinkbyte: fix deadlock issue with WoT on fglrx (http://bugs.winehq.org/show_bug.cgi?id=30330).
+	# Thanks to eto-rapchik@jabber.ru for discovering this issue.
+	use video_cards_fglrx && epatch "${FILESDIR}"/${PN}-remove-support-for-GL_ARB_sync.patch
 	# Pinkbyte: finally, this should be executed after applying such patches
 	"${S}"/tools/make_requests
 	#
