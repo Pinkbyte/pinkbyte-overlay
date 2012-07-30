@@ -37,8 +37,6 @@ src_prepare() {
 
 src_install() {
 	dodir /opt/rejik
-	fowners -R squid:squid /opt/rejik
-	fperms 750 /opt/rejik
 	exeinto /opt/rejik
 	insinto /opt/rejik
 
@@ -53,6 +51,9 @@ src_install() {
 	doexe tools/kill-cache
 	doexe tools/benchmark
 	doins tools/IN.gz
+
+	fowners -R squid:squid /opt/rejik
+	fperms -R 750 /opt/rejik
 
 	keepdir /var/log/rejik
 	fowners -R squid:squid /var/log/rejik
