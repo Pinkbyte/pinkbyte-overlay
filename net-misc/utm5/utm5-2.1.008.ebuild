@@ -15,12 +15,15 @@ IUSE=""
 
 RESTRICT="fetch nostrip"
 
-RDEPEND="virtual/libc
-		dev-libs/openssl:0.9.8
-		sys-libs/zlib
-		dev-libs/libxslt
-		|| ( dev-db/mysql
-		dev-db/postgresql )"
+X86_RDEPEND="virtual/libc
+	dev-libs/openssl:0.9.8
+	sys-libs/zlib
+	dev-libs/libxslt"
+
+RDEPEND="x86? ( $X86_RDEPEND )
+	 amd64?  ( app-emulation/emul-linux-x86-baselibs )
+	 || ( dev-db/mysql
+	 dev-db/postgresql )"
 
 pkg_nofetch() {
 	einfo "Please download ${A} from:"
