@@ -74,5 +74,5 @@ pkg_postinst() {
 	einfo "to /etc/squid/squid.conf"
 	einfo ""
 	einfo "Dont forget to edit /opt/rejik/redirector.conf"
-	einfo "Be sure redirector.conf have right permissions"
+	einfo "Be sure redirector.conf has right permissions"
 }
