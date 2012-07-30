@@ -13,7 +13,7 @@ SLOT="0"
 KEYWORDS="x86"
 IUSE=""
 
-RESTRICT="fetch nostrip"
+RESTRICT="fetch strip"
 
 X86_RDEPEND="virtual/libc
 	dev-libs/openssl:0.9.8
