@@ -1,4 +1,4 @@
-# Copyright 1999-2006 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
@@ -54,8 +54,8 @@ pkg_setup() {
 }
 
 src_install() {
-	cd ${WORKDIR}
-	cp -a usr ${D} || die "install failed"
+	cd "${WORKDIR}"
+	cp -a usr "${D}" || die "install failed"
 	dodir /etc/utm5
 	dodir /netup/utm5
 	keepdir /netup/utm5/backup
@@ -68,13 +68,13 @@ src_install() {
 		if [ -x netup/utm5/${conf} ] ; then
 			chmod ugo-x netup/utm5/${conf}
 		fi
-		mv netup/utm5/${conf} ${D}/etc/utm5/
+		mv netup/utm5/${conf} "${D}"/etc/utm5/
 		dosym /etc/utm5/${conf} /netup/utm5/${conf}
 	done
-	cp -a netup ${D}
+	cp -a netup "${D}"
 
-	doinitd ${FILESDIR}/utm5_core ${FILESDIR}/utm5_radius ${FILESDIR}/utm5_rfw
-	doconfd ${FILESDIR}/utm5_rfw.conf
+	doinitd "${FILESDIR}"/utm5_core "${FILESDIR}"/utm5_radius "${FILESDIR}"/utm5_rfw
+	doconfd "${FILESDIR}"/utm5_rfw.conf
 }
 
 pkg_postinst() {
