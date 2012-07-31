@@ -52,6 +52,9 @@ src_install() {
 	insinto /opt/rejik/tools
 	exeinto /opt/rejik/tools
 
+	fperms +x tools/kill-cache
+	fperms +x tools/benchmark
+
 	doexe tools/kill-cache
 	doexe tools/benchmark
 	doins tools/IN.gz
