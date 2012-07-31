@@ -29,7 +29,11 @@ src_prepare() {
 	sed -i -e "s:/usr/local/rejik3:/opt/rejik:g" vars.h
 	sed -i -e "s:SQUID_USER=nobody:SQUID_USER=squid:g" Makefile
 	sed -i -e "s:SQUID_GROUP=nogroup:SQUID_GROUP=squid:g" Makefile
-	sed -i -e "s:CC=gcc -Wall:CC=$(tc-getCC) $CFLAGS:g" Makefile
+	# Respect CFLAGS
+	sed -i -e "s:CC=gcc -Wall:CC=$(tc-getCC) $CFLAGS:" Makefile
+	# Respect LDFLAGS
+	sed -i -e "s:LIBS=-L/lib \`pcre-config --libs\`:LIBS=-L/lib \`pcre-config --libs\` $LDFLAGS:" Makefile
+	#
 	sed -i -e "s:error_log /usr/local/rejik3:error_log /var/log/rejik:g" redirector.conf.dist
 	sed -i -e "s:change_log /usr/local/rejik3:change_log /var/log/rejik:g" redirector.conf.dist
 	sed -i -e "s:/usr/local/rejik3:/opt/rejik:g" redirector.conf.dist
