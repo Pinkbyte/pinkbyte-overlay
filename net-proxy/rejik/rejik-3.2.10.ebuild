@@ -57,7 +57,7 @@ src_install() {
 	doins tools/IN.gz
 
 	fowners -R squid:squid /opt/rejik
-	fperms -R 750 /opt/rejik
+	fperms 750 /opt/rejik
 
 	keepdir /var/log/rejik
 	fowners -R squid:squid /var/log/rejik
