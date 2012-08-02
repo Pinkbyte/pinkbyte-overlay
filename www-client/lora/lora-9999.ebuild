@@ -17,6 +17,7 @@ IUSE=""
 
 DEPEND=""
 RDEPEND="sys-apps/sed
+	sys-apps/gawk
 	dev-python/lxml
 	app-shells/bash
 	"
