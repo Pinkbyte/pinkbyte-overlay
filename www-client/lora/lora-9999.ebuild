@@ -10,7 +10,7 @@ inherit eutils git-2
 
 DESCRIPTION="LORA is console client for linux.org.ru forum"
 HOMEPAGE="https://github.com/AlexCones/LORA"
-LICENSE="as-is"
+LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS=""
 IUSE=""
