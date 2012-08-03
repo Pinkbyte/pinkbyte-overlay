@@ -31,6 +31,7 @@ src_compile() { :; }
 src_install() {
 	emake DESTDIR="${D}" install
 	dodoc README
+	dosym /opt/lora/lora.sh /usr/bin/lora
 }
 
 pkg_postinst() {
