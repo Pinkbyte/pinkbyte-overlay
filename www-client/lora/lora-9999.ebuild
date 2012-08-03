@@ -22,14 +22,15 @@ RDEPEND="sys-apps/sed
 	app-shells/bash
 	"
 
+src_prepare() {
+	sed -i -e "s:INSTALL_DIR = /opt/lora:INSTALL_DIR = ${D}/opt/lora:" Makefile
+}
+
 src_compile() { :; }
 
 src_install() {
+	emake DESTDIR="${D}" install
 	dodoc README
-	rm -rf {.git,COPYING,LICENSE,README}
-	insinto /opt/lora
-	doins -r .
-	fperms +x /opt/lora/lora.sh
 }
 
 pkg_postinst() {
