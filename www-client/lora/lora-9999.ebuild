@@ -36,5 +36,5 @@ src_install() {
 
 pkg_postinst() {
 	einfo "LORA installed into /opt/lora"
-	einfo "Feel free to change PATH variable or run it manually like '/opt/lora/lora.sh'"
+	einfo "It can be launched with this command: '/usr/bin/lora'"
 }
