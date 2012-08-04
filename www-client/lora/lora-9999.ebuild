@@ -16,10 +16,11 @@ KEYWORDS=""
 IUSE=""
 
 DEPEND=""
-RDEPEND="sys-apps/sed
-	sys-apps/gawk
+RDEPEND="app-shells/bash
 	dev-python/lxml
-	app-shells/bash
+	net-misc/wget
+	sys-apps/sed
+	sys-apps/gawk
 	"
 
 src_prepare() {
