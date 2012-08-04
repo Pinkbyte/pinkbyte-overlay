@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/wine/wine-1.5.2.ebuild,v 1.3 2012/05/12 21:12:50 tetromino Exp $
+# $Header: $
 
 EAPI="4"
 
@@ -18,27 +18,33 @@ else
 	S=${WORKDIR}/${MY_P}
 fi
 
-GV="1.5"
+GV="1.6"
+MV="0.0.4"
+PULSE_PATCH="winepulse-2012.06.15.patch"
+
 DESCRIPTION="free implementation of Windows(tm) on Unix with custom patches to make World of Tanks work"
 HOMEPAGE="http://www.winehq.org/"
 SRC_URI="${SRC_URI}
 	gecko? (
 		mirror://sourceforge/wine/wine_gecko-${GV}-x86.msi
 		win64? ( mirror://sourceforge/wine/wine_gecko-${GV}-x86_64.msi )
-	)"
+	)
+	mono? ( mirror://sourceforge/${PN}/Wine%20Mono/${MV}/wine-mono-${MV}.msi )
+	http://source.winehq.org/patches/data/87234 -> ${PULSE_PATCH}"
 
 LICENSE="LGPL-2.1"
 SLOT="0"
 # Pinkbyte: add fglrx VIDEO_CARDS use
-IUSE="alsa capi cups custom-cflags elibc_glibc fontconfig +gecko gnutls gphoto2 gsm gstreamer hardened jpeg lcms ldap mp3 ncurses nls odbc openal opencl +opengl +oss +perl png samba scanner selinux ssl test +threads +truetype udisks v4l video_cards_fglrx +win32 +win64 +X xcomposite xinerama xml"
-REQUIRED_USE="elibc_glibc? ( threads )" #286560
+IUSE="alsa capi cups custom-cflags elibc_glibc fontconfig +gecko gnutls gphoto2 gsm gstreamer hardened jpeg lcms ldap +mono mp3 ncurses nls odbc openal opencl +opengl +oss +perl png pulseaudio samba scanner selinux ssl test +threads +truetype udisks v4l video_cards_fglrx +win32 +win64 +X xcomposite xinerama xml"
+REQUIRED_USE="elibc_glibc? ( threads )
+	mono? ( || ( win32 !win64 ) )" #286560
 RESTRICT="test" #72375
 
 MLIB_DEPS="amd64? (
 	truetype? ( >=app-emulation/emul-linux-x86-xlibs-2.1 )
 	X? (
 		>=app-emulation/emul-linux-x86-xlibs-2.1
-		>=app-emulation/emul-linux-x86-soundlibs-2.1
+		>=app-emulation/emul-linux-x86-soundlibs-2.1[pulseaudio(+)?]
 	)
 	mp3? ( app-emulation/emul-linux-x86-soundlibs )
 	odbc? ( app-emulation/emul-linux-x86-db )
@@ -58,7 +64,7 @@ RDEPEND="truetype? ( >=media-libs/freetype-2.0.0 media-fonts/corefonts )
 	openal? ( media-libs/openal )
 	udisks? (
 		sys-apps/dbus
-		sys-fs/udisks:0
+		sys-fs/udisks:2
 	)
 	gnutls? ( net-libs/gnutls )
 	gstreamer? ( media-libs/gstreamer media-libs/gst-plugins-base )
@@ -82,6 +88,7 @@ RDEPEND="truetype? ( >=media-libs/freetype-2.0.0 media-fonts/corefonts )
 	mp3? ( >=media-sound/mpg123-1.5.0 )
 	nls? ( sys-devel/gettext )
 	odbc? ( dev-db/unixODBC )
+	pulseaudio? ( media-sound/pulseaudio )
 	samba? ( >=net-fs/samba-3.0.25 )
 	selinux? ( sec-policy/selinux-wine )
 	xml? ( dev-libs/libxml2 dev-libs/libxslt )
@@ -125,6 +132,7 @@ src_unpack() {
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-1.1.15-winegcc.patch #260726
 	epatch "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
+	epatch "${DISTDIR}/${PULSE_PATCH}" #421365
 	# Pinkbyte: hack for properly hook RawInput methods
 	epatch "${FILESDIR}"/${PN}-raw_input_mod.patch
 	# Pinkbyte: fix perfomance problems with vertex buffers
@@ -172,6 +180,7 @@ do_configure() {
 		$(use_with oss) \
 		$(use_with png) \
 		$(use_with threads pthread) \
+		$(use_with pulseaudio pulse) \
 		$(use_with scanner sane) \
 		$(use_enable test tests) \
 		$(use_with truetype freetype) \
@@ -221,6 +230,10 @@ src_install() {
 		insinto /usr/share/wine/gecko
 		doins "${DISTDIR}"/wine_gecko-${GV}-x86.msi
 		use win64 && doins "${DISTDIR}"/wine_gecko-${GV}-x86_64.msi
+	fi
+	if use mono ; then
+		insinto /usr/share/wine/mono
+		doins "${DISTDIR}"/wine-mono-${MV}.msi
 	fi
 	if ! use perl ; then
 		rm "${D}"usr/bin/{wine{dump,maker},function_grep.pl} "${D}"usr/share/man/man1/wine{dump,maker}.1 || die
