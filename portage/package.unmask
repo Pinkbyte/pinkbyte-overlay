@@ -6,7 +6,4 @@ x11-apps/simple-ccsm::pinkbyte
 x11-libs/compiz-bcop::pinkbyte
 x11-libs/compizconfig-backend-gconf::pinkbyte
 x11-libs/compizconfig-backend-kconfig4::pinkbyte
-x11-plugins/compiz-plugins-extra::pinkbyte
-x11-plugins/compiz-plugins-main::pinkbyte
-x11-plugins/compiz-plugins-unsupported::pinkbyte
 x11-wm/compiz-fusion::pinkbyte
