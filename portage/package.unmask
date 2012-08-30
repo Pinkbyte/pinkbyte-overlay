@@ -1,9 +1,3 @@
 # Pinkbyte: unmask compiz
-dev-python/compizconfig-python::pinkbyte
-x11-apps/ccsm::pinkbyte
 x11-apps/fusion-icon::pinkbyte
 x11-apps/simple-ccsm::pinkbyte
-x11-libs/compiz-bcop::pinkbyte
-x11-libs/compizconfig-backend-gconf::pinkbyte
-x11-libs/compizconfig-backend-kconfig4::pinkbyte
-x11-wm/compiz-fusion::pinkbyte
