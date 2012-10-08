@@ -30,7 +30,8 @@ IPT_LIB=/usr/$(get_libdir)/xtables
 src_prepare() {
 	sed -i -e 's:-I$(KDIR)/include::' \
 		-e 's:gcc -O2:$(CC) $(CFLAGS) $(LDFLAGS):' \
-		-e 's:gcc:$(CC) $(CFLAGS) $(LDFLAGS):' Makefile.in || die 'sed failed'
+		-e 's:gcc:$(CC) $(CFLAGS) $(LDFLAGS):' Makefile.in || die 'sed on Makefile.in failed'
+	sed -i -e '/IPT_NETFLOW_VERSION/s/1.7.2/1.8/' ipt_NETFLOW.c || die 'sed on ipt_NETFLOW.c failed'
 }
 
 src_configure() {
