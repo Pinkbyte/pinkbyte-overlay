@@ -37,7 +37,7 @@ src_configure() {
 }
 
 src_compile() {
-        local IPT_VERSION=`pkg-config --modversion xtables`
+	local IPT_VERSION=`pkg-config --modversion xtables`
 	local ARCH=$(tc-arch-kernel)
 	emake CC="$(tc-getCC)" \
 	KDIR="${KV_DIR}" KVERSION="${KV_FULL}" IPTABLES_VERSION="${IPT_VERSION}" \
