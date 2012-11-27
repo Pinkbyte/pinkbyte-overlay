@@ -30,12 +30,12 @@ RDEPEND="media-libs/libsdl[audio,joystick,video]
 	virtual/opengl
 	media-gfx/nvidia-cg-toolkit"
 
-S=${WORKDIR}/data
+S="${WORKDIR}/data"
 
 pkg_nofetch() {
-	echo
+	elog
 	elog "Download ${SRC_URI} from ${HOMEPAGE} and place it in ${DISTDIR}"
-	echo
+	elog
 }
 
 src_unpack() {
@@ -47,8 +47,8 @@ src_unpack() {
 
 	if use linguas_ru; then
 		unpack "${PN}-rus.tar.bz2"
-		mv "${S}/package0.zip" "${S}/gamedata/data"
-		mv "${S}/strings/english.mo" "${S}/gamedata/data/strings"
+		mv "${S}/package0.zip" "${S}/gamedata/data" || die
+		mv "${S}/strings/english.mo" "${S}/gamedata/data/strings" || die
 	fi
 }
 
