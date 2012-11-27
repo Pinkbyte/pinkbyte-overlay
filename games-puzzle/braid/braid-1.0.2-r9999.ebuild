@@ -18,7 +18,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 
 IUSE="linguas_ru"
-RESTRICT="strip fetch"
+RESTRICT="fetch mirror strip"
 
 DEPEND="app-arch/unzip"
 RDEPEND="media-libs/libsdl[audio,joystick,video]
