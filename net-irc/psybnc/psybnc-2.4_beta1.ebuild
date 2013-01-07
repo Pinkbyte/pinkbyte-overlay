@@ -150,7 +150,7 @@ pkg_postinst() {
 		elog
 		elog "You have enabled oidentd-support. You will need to set"
 		elog "up your /etc/oident.conf file before running psybnc. An example"
-		elog "for psyBNC can be found under /etc/oident.conf.psybnc."
+		elog "for psyBNC can be found under /etc/oidentd.conf.psybnc"
 	fi
 	elog
 	elog "You can connect to psyBNC on port 23998 with user gentoo and password gentoo."
