@@ -4,16 +4,15 @@
 
 EAPI=5
 
-EGIT_REPO_URI="git://github.com/Pinkbyte/qtdiscs.git"
-inherit eutils qt4-r2 git-2
+inherit eutils qt4-r2 vcs-snapshot
 
 DESCRIPTION="QtDiscs is a little program to show information about CD and DVD discs collection"
 HOMEPAGE="http://github.com/Pinkbyte/qtdiscs"
-SRC_URI=""
+SRC_URI="https://github.com/Pinkbyte/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~x86"
 
 RDEPEND="
 	x11-libs/qt-core:4
