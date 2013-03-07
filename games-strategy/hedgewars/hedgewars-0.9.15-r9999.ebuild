@@ -17,7 +17,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="server"
 
-RDEPEND="x11-libs/qt-gui:4
+RDEPEND="dev-qt/qtgui:4
 	media-libs/libsdl[audio,opengl,video]
 	media-libs/sdl-ttf
 	media-libs/sdl-mixer[vorbis]

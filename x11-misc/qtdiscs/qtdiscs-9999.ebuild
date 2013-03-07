@@ -16,9 +16,9 @@ SLOT="0"
 KEYWORDS=""
 
 RDEPEND="
-	x11-libs/qt-core:4
-	x11-libs/qt-gui:4
-	x11-libs/qt-sql:4
+	dev-qt/qtcore:4
+	dev-qt/qtgui:4
+	dev-qt/qtsql:4
 "
 
 DEPEND="${RDEPEND}"

@@ -27,7 +27,7 @@ RESTRICT="mirror"
 
 RDEPEND="media-libs/openal
 	>=media-libs/libsdl-1.2.13
-	>=x11-libs/qt-core-4.3"
+	>=dev-qt/qtcore-4.3"
 
 DEPEND="${RDEPEND}"
 
