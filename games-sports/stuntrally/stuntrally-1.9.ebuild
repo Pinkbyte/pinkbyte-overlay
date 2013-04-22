@@ -26,6 +26,7 @@ RDEPEND="game? (
 		media-libs/libsdl:0
 		media-libs/libvorbis
 		media-libs/libogg
+		x11-libs/libXcursor
 	)
 	dev-libs/boost
 	net-libs/enet:1.3
