@@ -55,8 +55,12 @@ src_compile() {
 src_install() {
 	cmake-utils_src_install
 
-	use !editor && rm "${ED}/usr/share/applications/sr-editor.desktop" || die "remove of sr-editor.desktop failed"
-	use !game  && rm "${ED}/usr/share/applications/${PN}.desktop" || die "remove of ${PN}.desktop failed"
+	if use !editor; then
+		rm "${ED}/usr/share/applications/sr-editor.desktop" || die "remove of sr-editor.desktop failed"
+	fi
+	if use !game; then
+		rm "${ED}/usr/share/applications/${PN}.desktop" || die "remove of ${PN}.desktop failed"
+	fi
 
 	prepgamesdirs
 }
