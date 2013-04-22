@@ -38,6 +38,12 @@ REQUIRED_USE="editor? ( game )"
 DOCS=( Readme.txt )
 PATCHES=( "${FILESDIR}/${P}-sharedir-absolute-path.patch" )
 
+src_prepare() {
+	sed -i -e '/^Categories/s/Application;//' dist/*.desktop || die "sed on desktop files failed"
+
+	cmake-utils_src_prepare
+}
+
 src_configure() {
 	local mycmakeargs=(
 		-DSHARE_INSTALL="${GAMES_DATADIR}/${PN}"
