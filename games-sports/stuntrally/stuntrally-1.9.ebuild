@@ -24,7 +24,6 @@ S="${WORKDIR}/${MY_P}"
 # - check for bundled dependencies(for e.g. libbullet)
 # - verify dependencies in RDEPEND(libXcursor is already confirmed)
 # - possibly add one more string to REQUIRED_USE to avoid unneeded building with USE="-*"
-# - verify installed files in src_install once more time
 RDEPEND="game? (
 		dev-games/ogre[cg,boost,ois,freeimage,opengl,zip]
 		dev-games/mygui
@@ -64,8 +63,6 @@ src_compile() {
 }
 
 src_install() {
-#	cmake-utils_src_install
-
 	insinto "${GAMES_DATADIR}/${PN}"
 	doins -r data/*
 
@@ -73,17 +70,22 @@ src_install() {
 	doins -r config
 
 	dodoc ${DOCS[@]}
+	if use dedicated; then
+		pushd "${CMAKE_BUILD_DIR}" &>/dev/null || die
+		dogamesbin sr-masterserver
+		popd &>/dev/null
+	fi
 	if use editor; then
-		pushd "${CMAKE_BUILD_DIR}" 2>/dev/null || die
+		pushd "${CMAKE_BUILD_DIR}" &>/dev/null || die
 		dogamesbin sr-editor
-		popd
+		popd &>/dev/null
 		domenu dist/sr-editor.desktop
 		doicon -s 64 dist/sr-editor.png
 	fi
 	if use game; then
-		pushd "${CMAKE_BUILD_DIR}" 2>/dev/null || die
+		pushd "${CMAKE_BUILD_DIR}" &>/dev/null || die
 		dogamesbin ${PN}
-		popd
+		popd &>/dev/null
 		domenu dist/${PN}.desktop
 		doicon -s 64 dist/${PN}.png
 	fi
