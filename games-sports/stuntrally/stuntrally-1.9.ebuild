@@ -20,6 +20,11 @@ IUSE="dedicated +game editor"
 
 S="${WORKDIR}/${MY_P}"
 
+# TODO:
+# - check for bundled dependencies(for e.g. libbullet)
+# - verify dependencies in RDEPEND(libXcursor is already confirmed)
+# - possibly add one more string to REQUIRED_USE to avoid unneeded building with USE="-*"
+# - verify installed files in src_install once more time
 RDEPEND="game? (
 		dev-games/ogre[cg,boost,ois,freeimage,opengl,zip]
 		dev-games/mygui
