@@ -59,13 +59,28 @@ src_compile() {
 }
 
 src_install() {
-	cmake-utils_src_install
+#	cmake-utils_src_install
 
-	if use !editor; then
-		rm "${ED}/usr/share/applications/sr-editor.desktop" || die "remove of sr-editor.desktop failed"
+	insinto "${GAMES_DATADIR}/${PN}"
+	doins -r data/*
+
+	rm config/CMakeLists.txt || die
+	doins -r config
+
+	dodoc ${DOCS[@]}
+	if use editor; then
+		pushd "${CMAKE_BUILD_DIR}" 2>/dev/null || die
+		dogamesbin sr-editor
+		popd
+		domenu dist/sr-editor.desktop
+		doicon -s 64 dist/sr-editor.png
 	fi
-	if use !game; then
-		rm "${ED}/usr/share/applications/${PN}.desktop" || die "remove of ${PN}.desktop failed"
+	if use game; then
+		pushd "${CMAKE_BUILD_DIR}" 2>/dev/null || die
+		dogamesbin ${PN}
+		popd
+		domenu dist/${PN}.desktop
+		doicon -s 64 dist/${PN}.png
 	fi
 
 	prepgamesdirs
