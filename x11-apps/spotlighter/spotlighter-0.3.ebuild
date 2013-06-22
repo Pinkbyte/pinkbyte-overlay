@@ -39,6 +39,8 @@ src_prepare() {
 		-e '/Categories/s/$/;/' \
 		desktop/spotlighter.desktop.in || die 'sed on desktop/spotlighter.desktop.in failed'
 
+	sed -i -e '/#ifdef ENABLE_NLS/a#include <locale.h>/' src/spotlighter.h || die 'sed on spotlighter.h failed'
+
 	epatch_user
 }
 
