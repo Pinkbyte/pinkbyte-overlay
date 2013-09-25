@@ -1,0 +1,21 @@
+--- Makefile.am.orig	2013-09-25 17:35:08.835773000 +0400
++++ Makefile.am	2013-09-25 17:35:34.407773000 +0400
+@@ -9,15 +9,12 @@
+ 			src/config-h.in config/stamp-h.in
+ 
+ if EXAMPLES
+-SUBDIRS = src tests docs man win32 examples
++SUBDIRS = src docs man win32 examples
+ else
+-SUBDIRS = src tests docs man win32
++SUBDIRS = src docs man win32
+ endif
+ 
+-docsdir = $(datadir)/wsdlpull
+-docs_DATA = wsdlpull.html README
+-
+-EXTRA_DIST = AUTHORS COPYING CHANGES $(docs_DATA)
++EXTRA_DIST = AUTHORS COPYING CHANGES README
+ 
+ #pkginclude_HEADERS = src/config.h
+ pkgincludedir= $(includedir)
