@@ -26,6 +26,10 @@ DEPEND="${RDEPEND}
 
 src_prepare() {
 	epatch "${FILESDIR}/${P}-buildsystem.patch"
+
+	sed -i -e '/^pkgincludedir=/s/xml/xmlpull/' src/xmlpull/Makefile.am || die
+	sed -i -e '/^pkginclude_HEADERS/s/$(schema_h_sources)/$(schema_h_sources) $(wsdl_cc_sources)/' src/wsdlparser/Makefile.am || die
+
 	if ! use doc; then
 		sed -i -e '/SUBDIRS/s/docs //' Makefile.am || die
 	fi
