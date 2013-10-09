@@ -21,7 +21,7 @@ RDEPEND=""
 
 src_prepare() {
 	# Respect compiler environment
-	tc-export CC CXX AR
+	tc-export CC CXX
 
 	# Build shared library instead of static
 	epatch "${FILESDIR}/${P}-build-shared-lib.patch"
