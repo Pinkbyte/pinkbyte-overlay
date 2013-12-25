@@ -1,29 +1,42 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=2
+EAPI=5
+
+inherit eutils rpm
 
 DESCRIPTION="NetUP UTM - universal billing system for Internet Service Providers."
 HOMEPAGE="www.netup.ru"
-SRC_URI="${P}.tar.bz2"
+SRC_URI="${P}.i386-centos6.rpm"
 
 LICENSE="NETUP"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
-IUSE=""
+KEYWORDS="~amd64"
 
-RESTRICT="fetch strip"
+RESTRICT="fetch mirror strip"
 
-X86_RDEPEND="virtual/libc
-	dev-libs/openssl:0.9.8
+X86_RDEPEND="
+	dev-libs/openssl:0
 	sys-libs/zlib
-	dev-libs/libxslt"
+	dev-libs/libxslt
+"
 
-RDEPEND="x86? ( $X86_RDEPEND )
-	 amd64?  ( app-emulation/emul-linux-x86-baselibs )
-	 || ( dev-db/mysql
-	 dev-db/postgresql )"
+AMD64_RDEPEND="
+	app-emulation/emul-linux-x86-baselibs
+"
+
+RDEPEND="
+	amd64?  ( ${AMD64_RDEPEND} )
+	x86? ( ${X86_RDEPEND} )
+	virtual/mailx
+	|| ( dev-db/mysql
+	dev-db/postgresql )
+"
+
+S="${WORKDIR}"
+
+PREVIOUS_INSTALLED="${T}/previous_installed"
 
 pkg_nofetch() {
 	einfo "Please download ${A} from:"
@@ -31,10 +44,7 @@ pkg_nofetch() {
 	einfo "and move it to ${DISTDIR}"
 }
 
-PREVIOUS_INSTALLED="${T}/previous_installed"
-
 pkg_setup() {
-
 	for process in utm5_radius utm5_rfw utm5_core
 	do
 		if `ps aux | grep -v "grep ${process}" | grep ${process} >/dev/null 2>&1` ; then
@@ -45,41 +55,45 @@ pkg_setup() {
 		fi
 	done
 
-	echo "false" > ${PREVIOUS_INSTALLED}
-
 	if [ -x /netup/utm5/bin/utm5_core ] ; then
 		einfo "Previous installation found."
-		echo "true" > ${PREVIOUS_INSTALLED}
+		echo "true" > "${PREVIOUS_INSTALLED}"
 	fi
 }
 
 src_install() {
-	cd "${WORKDIR}"
-	cp -a usr "${D}" || die "install failed"
-	dodir /etc/utm5
 	dodir /netup/utm5
 	keepdir /netup/utm5/backup
 	keepdir /netup/utm5/db
 	keepdir /netup/utm5/log
 	keepdir /netup/utm5/templates
 
-	for conf in utm5.cfg radius5.cfg rfw5.cfg web5.cfg
+	insinto /etc/utm5
+	pushd netup/utm5 &>/dev/null || die
+	for conf in *.cfg
 	do
-		if [ -x netup/utm5/${conf} ] ; then
-			chmod ugo-x netup/utm5/${conf}
-		fi
-		mv netup/utm5/${conf} "${D}"/etc/utm5/
+		doins ${conf}
+		rm ${conf} || die
 		dosym /etc/utm5/${conf} /netup/utm5/${conf}
 	done
-	cp -a netup "${D}"
+	popd &>/dev/null
+	# Preserve permissions! Replace with doins with care!
+	cp -a netup "${D}" || die
 
-	doinitd "${FILESDIR}"/utm5_core "${FILESDIR}"/utm5_radius "${FILESDIR}"/utm5_rfw
+	if use amd64; then
+		dosym /usr/lib32/libssl.so /netup/utm5/lib/libssl.so.10
+		dosym /usr/lib32/libcrypto.so /netup/utm5/lib/libcrypto.so.10
+	fi
+
+	doinitd "${FILESDIR}"/utm5_{core,radius,rfw}
 	doconfd "${FILESDIR}"/utm5_rfw.conf
+
+	prune_libtool_files
 }
 
 pkg_postinst() {
 	echo
-	if [ "`cat $PREVIOUS_INSTALLED`" = "false" ] ; then
+	if [ -f "${PREVIOUS_INSTALLED}" ] ; then
 		einfo "If this is your first instalation of utm5 please run:"
 		einfo "mysqladmin create UTM5"
 		einfo "mysql UTM5 < /netup/utm5/UTM5_MYSQL.sql"
@@ -102,7 +116,5 @@ pkg_postinst() {
 	einfo "To start utm5_core automaticaly during booting you need to run:"
 	einfo "rc-update add utm5_core default"
 	echo
-	ewarn "Note: Configuration files are in /etc/utm5."
-	echo
-	einfo "Thank you for choosing utm5."
+	ewarn "Note: Configuration files are in /etc/utm5"
 }
