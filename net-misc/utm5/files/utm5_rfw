@@ -63,6 +63,7 @@ start() {
 	then
 		eerror "Can not write into  $LOG_FILENAME. Please check permitions."
 	fi
+	export LD_LIBRARY_PATH="/netup/utm5/lib"
 	/bin/su $USERNAME -c "/netup/utm5/bin/utm5_rfw $ARGS -c /etc/utm5/rfw5.cfg >> $LOG_FILENAME 2>&1 &"
 	eend $?
 }

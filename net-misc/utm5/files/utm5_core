@@ -1,5 +1,5 @@
 #!/sbin/runscript
-# Copyright 1999-2004 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
@@ -20,32 +20,18 @@ depend() {
 start() {
 	check_db_is_running || return 1
 	ebegin "Starting utm5_core"
-	start-stop-daemon --start --quiet --make-pidfile --pidfile /var/run/safe_utm5_core.pid \
+	export LD_LIBRARY_PATH="/netup/utm5/lib"
+	start-stop-daemon --start --quiet --make-pidfile --pidfile /run/safe_utm5_core.pid \
 	--background --exec /netup/utm5/bin/safe_utm5_core -- start
 	eend $?
 }
 
 stop() {
 	ebegin "Stopping safe_utm5_core"
-	start-stop-daemon --stop --quiet --signal 9 --pidfile /var/run/safe_utm5_core.pid
+	start-stop-daemon --stop --quiet --signal 9 --pidfile /run/safe_utm5_core.pid
 	eend $?
 	
 	ebegin "Stopping utm5_core"
-	killall -s USR1 utm5_core
-	
-	# Now we need to check that the processes are really stoped.
-	for i in 1 2 3 4 5 ; do
-		sleep 2
-		my_status=`ps aux | grep -v "grep utm5_core" | grep -v "stop" | grep utm5_core >/dev/null 2>&1; echo $?`
-		if [ "$my_status" = "1" ] ;then
-			echo -n "All process dead..."
-			break;
-		fi
-	done
-	my_status=`ps aux | grep -v "grep utm5_core" | grep -v "stop" | grep utm5_core >/dev/null 2>&1; echo $?`
-	if [ $my_status = "0" ] ; then
-		echo -n "Wated for 10 sec and no result... Killing!"
-		killall -9 utm5_core
-	fi
-	eend 0 
+	start-stop-daemon --stop --quiet --signal USR1 --pidfile /run/utm5_core.pid
+	eend $?
 }
