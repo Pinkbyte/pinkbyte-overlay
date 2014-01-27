@@ -7,13 +7,17 @@ start() {
 	ebegin "Starting utm5_radius"
 	export LD_LIBRARY_PATH="/netup/utm5/lib"
 	start-stop-daemon --start --quiet --background \
-		--pidfile /run/utm5_radius.pid \
+		--make-pidfile --pidfile /run/safe_utm5_radius.pid \
 		--exec /netup/utm5/bin/safe_utm5_radius -- start
 	eend $?
 }
 
 stop() {
+	ebegin "Stopping safe_utm5_radius"
+	start-stop-daemon --stop --quiet --signal 9 --pidfile /run/safe_utm5_radius.pid
+	eend $?
+	
 	ebegin "Stopping utm5_radius"
-	start-stop-daemon --stop --quiet --pidfile /run/utm5_radius.pid
+	start-stop-daemon --stop --quiet --signal USR1 --pidfile /run/utm5_radius.pid
 	eend $?
 }
