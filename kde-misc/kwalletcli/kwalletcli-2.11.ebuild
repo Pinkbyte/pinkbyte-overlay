@@ -6,7 +6,7 @@ EAPI=5
 
 inherit eutils toolchain-funcs
 
-DESCRIPTION="CLI for the KDE Wallet"
+DESCRIPTION="A command-line interface for the KDE Wallet"
 HOMEPAGE="https://www.mirbsd.org/kwalletcli.htm"
 SRC_URI="https://www.mirbsd.org/MirOS/dist/hosted/${PN}/${P}.tar.gz"
 
@@ -16,6 +16,7 @@ SLOT="4"
 KEYWORDS=" ~amd64 ~x86"
 
 RDEPEND="
+	app-shells/mksh
 	kde-base/kdelibs:4
 	kde-base/kwalletd:4
 "
@@ -28,7 +29,6 @@ src_prepare() {
 	sed -i \
 		-e "s:-lQtCore:$($(tc-getPKG_CONFIG) --libs QtCore):" \
 		GNUmakefile || die 'sed on GNUmakefile failed'
-	sed -i -e 's:/usr/bin/env mksh:/bin/bash:' kwalletaskpass kwalletcli_getpin pinentry-kwallet || die 'failed to change shebang in scripts'
 	epatch_user
 }
 
