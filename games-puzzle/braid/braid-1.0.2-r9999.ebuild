@@ -21,7 +21,7 @@ IUSE="linguas_ru"
 RESTRICT="fetch mirror strip"
 
 DEPEND="app-arch/unzip"
-RDEPEND="media-libs/libsdl[audio,joystick,video]
+RDEPEND="media-libs/libsdl[joystick,sound,video]
 	x11-libs/libX11
 	x11-libs/libXau
 	x11-libs/libxcb
