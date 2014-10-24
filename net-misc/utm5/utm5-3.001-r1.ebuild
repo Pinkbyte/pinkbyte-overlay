@@ -1,14 +1,17 @@
-# Copyright 1999-2013 Gentoo Foundation
+# Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
 EAPI=5
 
-inherit eutils rpm
+inherit eutils multilib pax-utils rpm
 
 DESCRIPTION="NetUP UTM - universal billing system for Internet Service Providers."
 HOMEPAGE="www.netup.ru"
-SRC_URI="${P}.i386-centos6.rpm"
+SRC_URI="
+	amd64? ( ${P}.x86_64-centos6_x64.rpm )
+	x86? ( ${P}.i386-centos6.rpm )
+"
 
 LICENSE="NETUP"
 SLOT="0"
@@ -16,20 +19,12 @@ KEYWORDS="~amd64"
 
 RESTRICT="fetch mirror strip"
 
-X86_RDEPEND="
+RDEPEND="
 	dev-libs/openssl:0
 	sys-libs/zlib
 	dev-libs/libxslt
-"
-
-AMD64_RDEPEND="
-	app-emulation/emul-linux-x86-baselibs
-"
-
-RDEPEND="
-	amd64?  ( ${AMD64_RDEPEND} )
-	x86? ( ${X86_RDEPEND} )
 	virtual/mailx
+	dev-db/postgresql-base
 	|| ( dev-db/mysql
 	dev-db/postgresql )
 "
@@ -79,11 +74,11 @@ src_install() {
 	popd &>/dev/null
 	# Preserve permissions! Replace with doins with care!
 	cp -a netup "${D}" || die
+	pax-mark -m "${D}/netup/utm5/bin/utm5_core"
 
-	if use amd64; then
-		dosym /usr/lib32/libssl.so /netup/utm5/lib/libssl.so.10
-		dosym /usr/lib32/libcrypto.so /netup/utm5/lib/libcrypto.so.10
-	fi
+	dosym /usr/$(get_libdir)/libssl.so /netup/utm5/lib/libssl.so.10
+	dosym /usr/$(get_libdir)/libcrypto.so /netup/utm5/lib/libcrypto.so.10
+	dosym /usr/$(get_libdir)/libmysqlclient_r.so /netup/utm5/lib/libmysqlclient_r.so.16
 
 	doinitd "${FILESDIR}"/utm5_{core,radius,rfw}
 	doconfd "${FILESDIR}"/utm5_rfw.conf
