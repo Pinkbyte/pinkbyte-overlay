@@ -24,7 +24,6 @@ RDEPEND="
 	sys-libs/zlib
 	dev-libs/libxslt
 	virtual/mailx
-	dev-db/postgresql-base
 	|| ( dev-db/mysql
 	dev-db/postgresql )
 "
