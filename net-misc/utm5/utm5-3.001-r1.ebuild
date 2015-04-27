@@ -77,7 +77,8 @@ src_install() {
 
 	dosym /usr/$(get_libdir)/libssl.so /netup/utm5/lib/libssl.so.10
 	dosym /usr/$(get_libdir)/libcrypto.so /netup/utm5/lib/libcrypto.so.10
-	dosym /usr/$(get_libdir)/libmysqlclient_r.so /netup/utm5/lib/libmysqlclient_r.so.16
+
+	# Mysql library(libmysqlclient_r.so.16) should be fetched from 5.5. 5.6 is incompatible
 
 	doinitd "${FILESDIR}"/utm5_{core,radius,rfw}
 	doconfd "${FILESDIR}"/utm5_rfw.conf
