@@ -24,8 +24,8 @@ RDEPEND="
 	sys-libs/zlib
 	dev-libs/libxslt
 	virtual/mailx
-	|| ( dev-db/mysql
-	dev-db/postgresql )
+	dev-db/mysql
+	dev-db/postgresql
 "
 
 S="${WORKDIR}"
