@@ -18,7 +18,7 @@ KEYWORDS=" ~amd64 ~x86"
 RDEPEND="
 	app-shells/mksh
 	kde-base/kdelibs:4
-	kde-base/kwalletd:4
+	kde-apps/kwalletd:4
 "
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
