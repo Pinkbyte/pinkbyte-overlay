@@ -1,0 +1,17 @@
+--- lightparser.pl.orig	2013-12-25 13:06:21.375580481 +0400
++++ lightparser.pl	2013-12-25 13:07:04.339580830 +0400
+@@ -32,11 +32,11 @@
+ 
+ push (@INC,(fileparse($0))[1]);
+ 
+-require "lightsquid.cfg";
+-require "common.pl";
++require "/etc/lightsquid/lightsquid.cfg";
++require "/usr/share/lightsquid/common.pl";
+ 
+ #include ip2name function
+-require "ip2name/ip2name.$ip2name";
++require "$ip2namepath/ip2name.$ip2name";
+ 
+ $SIG{INT} = \&LOCKREMOVER;	# traps keyboard interrupt
+ my $lockfilepath	  ="$lockpath/lockfile";
