@@ -4,7 +4,7 @@
 
 EAPI=5
 
-EGIT_REPO_URI="https://github.com/figec/ttyhlauncher.git"
+EGIT_REPO_URI="https://github.com/dngulin/ttyhlauncher.git"
 inherit eutils games git-r3 qmake-utils
 
 DESCRIPTION="ttyh.ru minecraft launcher"
