@@ -17,7 +17,6 @@ KEYWORDS=""
 
 DEPEND=">=dev-qt/qtcore-5.3.0:5
         >=dev-qt/qtgui-5.3.0:5
-	>=dev-qt/qtwebkit-5.3.0:5
 	dev-libs/quazip[qt5]"
 
 RDEPEND="${DEPEND}"
