@@ -1,11 +1,11 @@
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=5
+EAPI=6
 
 EGIT_REPO_URI="https://github.com/dngulin/ttyhlauncher.git"
-inherit eutils games git-r3 qmake-utils
+inherit eutils git-r3 qmake-utils
 
 DESCRIPTION="ttyh.ru minecraft launcher"
 HOMEPAGE="http://ttyh.ru"
@@ -17,7 +17,7 @@ KEYWORDS=""
 
 DEPEND=">=dev-qt/qtcore-5.3.0:5
         >=dev-qt/qtgui-5.3.0:5
-	dev-libs/quazip[qt5]"
+	>=dev-libs/quazip-0.7.2[qt5]"
 
 RDEPEND="${DEPEND}"
 
@@ -26,7 +26,7 @@ src_configure() {
 }
 
 src_install() {
-	dogamesbin "${PN}"
+	dobin "${PN}"
 	newicon resources/favicon.png "${PN}.png"
 	make_desktop_entry "${PN}" "${DESCRIPTION}"
 }
