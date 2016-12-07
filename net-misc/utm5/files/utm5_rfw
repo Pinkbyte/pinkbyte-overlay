@@ -10,7 +10,7 @@ checkconfig() {
         fi
 
 	. /etc/conf.d/utm5_rfw.conf
-	
+
 	# Checking for valid shell for supplied user.
 	SHELL=`grep ^$USERNAME: /etc/passwd | awk -F : '{print $7}'`
 	if [ -z "$SHELL" ] ; then
@@ -21,14 +21,14 @@ checkconfig() {
 	# This is durty and assumes that shell is in /bin directory. But in most cases this is true.
 	shell_exist=false
 	rm -f /tmp/tmp.shells ; grep "^/bin/" /etc/shells > /tmp/tmp.shells
-	
+
 	while read shell
 	do
 		if [ "$shell" = "$SHELL" ] ; then
 			shell_exist=true
 		fi
 	done < /tmp/tmp.shells
-	
+
 	if [ "$shell_exist" = "false" ] ; then
 		eerror "Supply user with a valid shell in /etc/conf.d/utm5_rfw.conf."
 		return 1
@@ -45,12 +45,12 @@ start() {
         checkconfig || return 1
 	ebegin "Starting utm5_rfw"
 	. /etc/conf.d/utm5_rfw.conf
-	
+
 	if [ -z "$GROUPNAME" ] ; then
 		GROUPID=`grep ^$USERNAME: /etc/passwd | awk -F : '{print $4}'`
 		GROUPNAME=`grep :$GROUPID: /etc/group | awk -F : '{print $1}'`
 	fi
-	
+
 	LOG_FILENAME=`grep "log_file_main" /etc/utm5/rfw5.cfg | grep "=" | awk -F= '{print $2}'`
 	if [ ! -f $LOG_FILENAME ] ; then
 		mkdir -p `dirname $LOG_FILENAME`
@@ -64,12 +64,14 @@ start() {
 		eerror "Can not write into  $LOG_FILENAME. Please check permitions."
 	fi
 	export LD_LIBRARY_PATH="/netup/utm5/lib"
-	/bin/su $USERNAME -c "/netup/utm5/bin/utm5_rfw $ARGS -c /etc/utm5/rfw5.cfg >> $LOG_FILENAME 2>&1 &"
+	start-stop-daemon --start --quiet --background \
+		--make-pidfile --pidfile /run/utm5_rfw.pid \
+		--exec /netup/utm5/bin/utm5_rfw -- $ARGS -c /etc/utm5/rfw5.cfg
 	eend $?
 }
 
-stop() {	
+stop() {
 	ebegin "Stopping utm5_rfw"
-	killall -s 9 utm5_rfw
+	start-stop-daemon --stop --quiet --signal KILL --pidfile /run/utm5_rfw.pid
 	eend $?
 }
