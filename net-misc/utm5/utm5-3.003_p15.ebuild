@@ -24,8 +24,8 @@ RDEPEND="
 	dev-libs/openssl:0
 	sys-libs/zlib
 	dev-libs/libxslt
+	virtual/libmysqlclient
 	virtual/mailx
-	virtual/mysql
 	dev-db/postgresql:*
 "
 
