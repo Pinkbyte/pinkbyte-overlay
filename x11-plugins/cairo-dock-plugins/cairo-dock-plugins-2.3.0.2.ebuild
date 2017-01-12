@@ -44,7 +44,7 @@ RDEPEND="
 	alsa? ( media-libs/alsa-lib )
 	exif? ( media-libs/libexif )
 	gmenu? ( gnome-base/gnome-menus )
-	kde? ( kde-base/kdelibs )
+	kde? ( kde-frameworks/kdelibs:4 )
 	terminal? ( x11-libs/vte )
 	webkit? ( >=net-libs/webkit-gtk-1.0 )
 	xfce? ( xfce-base/thunar )
