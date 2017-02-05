@@ -1,6 +1,6 @@
-# Copyright 1999-2013 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
 # TODO: unbundle libSDL2
 
@@ -24,17 +24,17 @@ MYGAMEDIR=${GAMES_PREFIX_OPT}/${PN}
 QA_PREBUILT="${MYGAMEDIR#/}/dearesther_linux
 	${MYGAMEDIR#/}/bin/*.so*"
 
-DEPEND="app-arch/unzip
-	app-arch/unrar"
-RDEPEND="virtual/opengl
-	amd64? (
-		app-emulation/emul-linux-x86-sdl
-		app-emulation/emul-linux-x86-xlibs
-	)
-	x86? (
-		media-libs/freetype
-		media-libs/openal
-	)"
+DEPEND="
+	app-arch/unzip
+	app-arch/unrar
+"
+RDEPEND="
+	>=media-libs/freetype-2.5.0.1[abi_x86_32(-)]
+	>=media-libs/libsdl-1.2.15-r5[abi_x86_32(-)]
+	>=media-libs/openal-1.15.1[abi_x86_32(-)]
+	x11-libs/libX11[abi_x86_32(-)]
+	virtual/opengl[abi_x86_32(-)]
+"
 
 S=${WORKDIR}/data
 
