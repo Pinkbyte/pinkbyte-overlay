@@ -1,8 +1,8 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=4
+EAPI=6
 
 MY_PN="radiusplugin"
 MY_P="${MY_PN}_v${PV}"
@@ -21,9 +21,9 @@ KEYWORDS="~amd64 ~x86"
 #IUSE="doc"
 IUSE=""
 
-DEPEND="dev-libs/libgcrypt"
+DEPEND="dev-libs/libgcrypt:="
 RDEPEND="${DEPEND}
-	net-misc/openvpn"
+	net-vpn/openvpn"
 
 S="${WORKDIR}/${MY_PN}"
 
@@ -37,6 +37,8 @@ src_prepare() {
 		Makefile || die 'sed on Makefile failed'
 	# needed for proper compilation
 	append-cflags -shared -fPIC -DPIC
+
+	eapply_user
 }
 
 src_compile() {
