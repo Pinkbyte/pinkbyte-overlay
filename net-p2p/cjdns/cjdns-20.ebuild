@@ -70,7 +70,6 @@ src_install() {
 		doexe contrib/python/searches
 		doexe contrib/python/sessionStats
 		doexe contrib/python/trashroutes
-		doexe tools/traceroute
 
 		insinto "${TOOLS_PATH}/cjdnsadmin"
 		doins contrib/python/cjdnsadmin/*
