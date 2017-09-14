@@ -1,21 +1,19 @@
-# Copyright 1999-2013 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
 
-EAPI=5
+EAPI=6
 
-EGIT_REPO_URI="git://github.com/vain/sgopherd.git"
+EGIT_REPO_URI="https://github.com/vain/sgopherd.git"
 
-inherit git-2
+inherit git-r3
 
 DESCRIPTION="Small Gopher Server written in GNU Bash"
 HOMEPAGE="https://github.com/vain/sgopherd"
 SRC_URI=""
 
-LICENSE="PIZZA-WARE"
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS=""
-IUSE=""
 
 DEPEND=""
 RDEPEND="app-shells/bash
@@ -25,6 +23,7 @@ RDEPEND="app-shells/bash
 src_prepare() {
 	# Set default user to run sgopherd
 	sed -i -e '/user/s/http/nobody/' xinetd/xinetd-example.conf || die 'sed failed'
+	default
 }
 
 src_install() {
