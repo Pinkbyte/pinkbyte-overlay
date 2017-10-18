@@ -33,6 +33,9 @@
 			Enable support for <pkg>sys-libs/readline</pkg> to provide the Quagga Virtual Terminal
 			Interface Shell (vtysh)
 		</flag>
+		<flag name="shell-access">
+			Enable user access to shell/telnet/ssh
+		</flag>
 		<flag name="tcp-zebra">
 			Enable TCP zserv interface on port 2600 for Zebra/protocol-daemon communication. Unix domain
 			sockets are chosen otherwise
