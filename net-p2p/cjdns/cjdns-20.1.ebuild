@@ -37,6 +37,15 @@ pkg_setup() {
 	fi
 }
 
+src_prepare() {
+	# Drop -Werror
+	sed -i \
+		-e "/'-Werror',/d" \
+		node_build/make.js || die
+
+	default
+}
+
 src_compile() {
 	python-single-r1_pkg_setup
 	tc-export CC
