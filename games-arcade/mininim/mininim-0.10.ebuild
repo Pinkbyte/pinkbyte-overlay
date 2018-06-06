@@ -1,8 +1,8 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=6
+EAPI=7
 
 inherit autotools
 
@@ -17,10 +17,7 @@ KEYWORDS="~amd64 ~x86"
 RDEPEND="media-libs/allegro:5[alsa,gtk,png,truetype,vorbis]"
 DEPEND="${RDEPEND}"
 
-PATCHES=( "${FILESDIR}/${P}-sandbox.patch" )
-
 src_prepare() {
-	eapply ${PATCHES[@]}
 	eapply_user
 	eautoreconf
 }
