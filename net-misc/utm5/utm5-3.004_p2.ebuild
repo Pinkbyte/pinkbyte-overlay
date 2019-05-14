@@ -1,17 +1,16 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
 
-EAPI=6
+EAPI=7
 
-inherit eutils multilib pax-utils rpm
+inherit multilib pax-utils rpm
 
-DESCRIPTION="NetUP UTM - universal billing system for Internet Service Providers."
+MAJOR_V=$(ver_cut 1-2)
+MINOR_V=$(ver_cut 4)
+
+DESCRIPTION="NetUP UTM - universal billing system for Internet Service Providers"
 HOMEPAGE="www.netup.ru"
-SRC_URI="
-	amd64? ( ${P}.x86_64-centos6_x64.rpm )
-	x86? ( ${P}.i386-centos6.rpm )
-"
+SRC_URI="${PN}-${MAJOR_V}.x86_64-centos7_x64(update${MINOR_V}).rpm"
 
 LICENSE="NETUP"
 SLOT="0"
@@ -20,6 +19,7 @@ KEYWORDS="~amd64"
 RESTRICT="fetch mirror strip"
 
 RDEPEND="
+	app-crypt/mit-krb5
 	dev-libs/openssl:0
 	sys-libs/zlib
 	dev-libs/libxslt
@@ -36,7 +36,7 @@ pkg_nofetch() {
 	einfo "and move it to ${DISTDIR}"
 }
 
-pkg_setup() {
+pkg_preinst() {
 	for process in utm5_radius utm5_rfw utm5_core
 	do
 		if `ps aux | grep -v "grep ${process}" | grep ${process} >/dev/null 2>&1` ; then
@@ -76,7 +76,8 @@ src_install() {
 	doinitd "${FILESDIR}"/utm5_{core,radius,rfw}
 	doconfd "${FILESDIR}"/utm5_rfw.conf
 
-	prune_libtool_files
+	# Prune libtool files
+	find "${D}" -name '*.la' -type f -delete || die
 }
 
 pkg_postinst() {
