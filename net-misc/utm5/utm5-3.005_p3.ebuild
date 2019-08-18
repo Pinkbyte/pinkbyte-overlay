@@ -1,17 +1,15 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
 
-EAPI=6
+EAPI=7
 
-inherit eutils multilib pax-utils rpm versionator
+inherit multilib pax-utils rpm
 
-MAJOR_V=$(get_version_component_range 1-2)
-MINOR_V=$(get_version_component_range 3)
-MINOR_V=${MINOR_V/p/}
+MAJOR_V=$(ver_cut 1-2)
+MINOR_V=$(ver_cut 4)
 
-DESCRIPTION="NetUP UTM - universal billing system for Internet Service Providers."
-HOMEPAGE="www.netup.ru"
+DESCRIPTION="NetUP UTM - universal billing system for Internet Service Providers"
+HOMEPAGE="https://www.netup.tv/en/utm5/"
 SRC_URI="${PN}-${MAJOR_V}.x86_64-centos6_x64(update${MINOR_V}).rpm"
 
 LICENSE="NETUP"
@@ -21,12 +19,15 @@ KEYWORDS="~amd64"
 RESTRICT="fetch mirror strip"
 
 RDEPEND="
-	dev-libs/openssl:0
-	sys-libs/zlib
+	app-crypt/mit-krb5
+	dev-db/postgresql:*
+	dev-libs/libxml2:2
 	dev-libs/libxslt
+	dev-libs/openssl:0
+	net-misc/curl
+	sys-libs/zlib
 	virtual/libmysqlclient
 	virtual/mailx
-	dev-db/postgresql:*
 "
 
 S="${WORKDIR}"
@@ -35,18 +36,6 @@ pkg_nofetch() {
 	einfo "Please download ${A} from:"
 	einfo "http://www.netup.ru/"
 	einfo "and move it to ${DISTDIR}"
-}
-
-pkg_setup() {
-	for process in utm5_radius utm5_rfw utm5_core
-	do
-		if `ps aux | grep -v "grep ${process}" | grep ${process} >/dev/null 2>&1` ; then
-			ewarn "You did not stop ${process}."
-			ewarn "Please stop all process with ${process} in"
-			ewarn "their names and then try again."
-			die "Processes are not stoped."
-		fi
-	done
 }
 
 src_install() {
@@ -72,12 +61,13 @@ src_install() {
 	dosym /usr/$(get_libdir)/libssl.so /netup/utm5/lib/libssl.so.10
 	dosym /usr/$(get_libdir)/libcrypto.so /netup/utm5/lib/libcrypto.so.10
 
-	# Mysql library(libmysqlclient_r.so.16) should be fetched from 5.5. 5.6 is incompatible
+	# Mysql library(libmysqlclient_r.so.16) should be fetched from CentOS 6. Current version in Gentoo is incompatible
 
 	doinitd "${FILESDIR}"/utm5_{core,radius,rfw}
 	doconfd "${FILESDIR}"/utm5_rfw.conf
 
-	prune_libtool_files
+	# Prune libtool files
+	find "${D}" -name '*.la' -type f -delete || die
 }
 
 pkg_postinst() {
