@@ -26,7 +26,7 @@ RDEPEND="
 	dev-libs/openssl:0
 	net-misc/curl
 	sys-libs/zlib
-	virtual/libmysqlclient
+	virtual/mysql
 	virtual/mailx
 "
 
