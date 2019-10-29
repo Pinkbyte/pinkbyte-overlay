@@ -1,32 +1,34 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
 
-EAPI=6
+EAPI=7
 
 EGIT_REPO_URI="https://github.com/dngulin/ttyhlauncher.git"
-inherit eutils git-r3 qmake-utils
+inherit cmake-utils git-r3 xdg-utils
 
 DESCRIPTION="ttyh.ru minecraft launcher"
-HOMEPAGE="http://ttyh.ru"
+HOMEPAGE="https://ttyh.ru"
 SRC_URI=""
 
-LICENSE="GPLv3"
+LICENSE="GPL-3+"
 SLOT="0"
 KEYWORDS=""
 
-DEPEND=">=dev-qt/qtcore-5.3.0:5
-        >=dev-qt/qtgui-5.3.0:5
-	>=dev-libs/quazip-0.7.2[qt5]"
+BDEPEND="dev-qt/linguist-tools:5"
+RDEPEND=">=dev-qt/qtcore-5.7.0:5
+        >=dev-qt/qtgui-5.7.0:5[png]
+	>=dev-qt/qtwidgets-5.7.0:5
+	>=dev-qt/qtnetwork-5.7.0:5
+	>=dev-qt/qtconcurrent-5.7.0:5
+	dev-libs/libzip:0="
+DEPEND="${RDEPEND}"
 
-RDEPEND="${DEPEND}"
-
-src_configure() {
-	eqmake5 "${PN}.pro"
+pkg_postinst() {
+	xdg_desktop_database_update
+	xdg_icon_cache_update
 }
 
-src_install() {
-	dobin "${PN}"
-	newicon resources/favicon.png "${PN}.png"
-	make_desktop_entry "${PN}" "${DESCRIPTION}"
+pkg_postrm() {
+	xdg_desktop_database_update
+	xdg_icon_cache_update
 }
