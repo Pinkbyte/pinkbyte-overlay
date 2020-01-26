@@ -23,7 +23,6 @@ RDEPEND="
 	dev-db/postgresql:*
 	dev-libs/libxml2:2
 	dev-libs/libxslt
-	dev-libs/openssl:0
 	net-misc/curl
 	sys-libs/zlib
 	virtual/mysql
@@ -58,9 +57,7 @@ src_install() {
 	cp -a netup "${D}" || die
 	pax-mark -m "${D}/netup/utm5/bin/utm5_core"
 
-	dosym /usr/$(get_libdir)/libssl.so /netup/utm5/lib/libssl.so.10
-	dosym /usr/$(get_libdir)/libcrypto.so /netup/utm5/lib/libcrypto.so.10
-
+	# OpenSSL libraries(libssl.so.10 and libcrypto.so.10) should be fetched from CentOS 6. Current version in Gentoo is incompatible
 	# Mysql library(libmysqlclient_r.so.16) should be fetched from CentOS 6. Current version in Gentoo is incompatible
 
 	doinitd "${FILESDIR}"/utm5_{core,radius,rfw}
