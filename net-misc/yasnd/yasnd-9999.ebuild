@@ -1,30 +1,29 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="4"
+EAPI=7
 
-inherit git-2 autotools-utils
+EGIT_REPO_URI="https://gitlab.com/Pinkbyte/yasnd.git"
+inherit autotools git-r3
 
 DESCRIPTION="Yet Another Stupid Network Daemon, tool that checks hosts' availability"
-HOMEPAGE="http://github.com/Pinkbyte/yasnd"
-EGIT_REPO_URI="http://github.com/Pinkbyte/yasnd.git"
+HOMEPAGE="https://gitlab.com/Pinkbyte/yasnd"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS=""
 IUSE=""
-SRC_URI=""
 
 RDEPEND="app-mobilephone/gammu
-	dev-libs/confuse"
-
+	dev-libs/confuse:="
 DEPEND="${RDEPEND}"
 
-AUTOTOOLS_AUTORECONF="1"
-AUTOTOOLS_IN_SOURCE_BUILD="1"
+src_prepare() {
+	eapply_user
+	eautoreconf
+}
 
 src_install() {
 	newinitd contrib/yasnd.openrc yasnd
 	newinitd contrib/yasnd-early.openrc yasnd-early
-	autotools-utils_src_install
+	default
 }
