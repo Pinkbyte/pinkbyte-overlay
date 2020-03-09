@@ -1,13 +1,12 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
-# $Id $
 
-EAPI="6"
+EAPI=7
 
-inherit cmake-utils eutils versionator
+inherit cmake-utils eutils
 
 MY_PN="${PN/plugins/plug-ins}"
-MM_PV=$(get_version_component_range '1-2')
+MM_PV=$(ver_cut 1-2)
 
 DESCRIPTION="Official plugins for cairo-dock"
 HOMEPAGE="http://www.glx-dock.org"
@@ -16,7 +15,7 @@ SRC_URI="http://launchpad.net/${MY_PN}/${MM_PV}/${PV}/+download/${MY_PN}-${PV}.t
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="alsa exif gmenu gtk3 kde terminal gnote vala webkit xfce xgamma xklavier twitter indicator3 zeitgeist mail"
+IUSE="alsa exif gmenu kde terminal gnote vala webkit xfce xgamma xklavier twitter indicator3 zeitgeist mail"
 
 RDEPEND="
 	dev-libs/dbus-glib
@@ -25,10 +24,9 @@ RDEPEND="
 	gnome-base/librsvg:2
 	sys-apps/dbus
 	x11-libs/cairo
-	!gtk3? ( x11-libs/gtk+:2 )
 	x11-libs/gtkglext
 	~x11-misc/cairo-dock-${PV}
-	gtk3? ( x11-libs/gtk+:3 )
+	x11-libs/gtk+:3
 	alsa? ( media-libs/alsa-lib )
 	exif? ( media-libs/libexif )
 	gmenu? ( gnome-base/gnome-menus )
@@ -52,11 +50,13 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	dev-libs/libdbusmenu[gtk3]
 "
+
 src_configure() {
-	mycmakeargs=(
+	local mycmakeargs=(
+		"-Denable-alsa-mixer=$(usex alsa)"
+		"-Denable-sound-effects=$(usex alsa)"
 		# broken with 0.99.x (as of cairo-dock 3.3.2)
 		"-Denable-upower-support=OFF"
-		`use gtk3 && echo "-Dforce-gtk2=OFF" || echo "-Dforce-gtk2=ON"`
 	)
 	cmake-utils_src_configure
 }
