@@ -1,9 +1,0 @@
---- xnconfig.pc.in.orig	2012-06-07 21:42:01.567959027 +0400
-+++ xnconfig.pc.in	2012-06-07 21:42:06.613958946 +0400
-@@ -7,5 +7,5 @@
- Description: XNeur config library
- Requires: libpcre
- Version: @VERSION@
--Libs: -L@libdir@ -lxnconfig @PCRE_LIBS@ @LDFLAGS@ @ADDITIONAL_LIBS@
-+Libs: -L@libdir@ -lxnconfig @PCRE_LIBS@ @ADDITIONAL_LIBS@
- Cflags: -I@includedir@
