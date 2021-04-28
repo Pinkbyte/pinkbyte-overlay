@@ -1,12 +1,9 @@
-# Copyright 1999-2013 Gentoo Foundation
+# Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
 
-EAPI=5
+EAPI=7
 
-AUTOTOOLS_AUTORECONF=1
-AUTOTOOLS_IN_SOURCE_BUILD=1
-inherit autotools-utils eutils
+inherit autotools
 
 DESCRIPTION="C++ web services client library and utilities"
 HOMEPAGE="http://wsdlpull.sourceforge.net"
@@ -25,15 +22,24 @@ DEPEND="${RDEPEND}
 	doc? ( app-doc/doxygen )"
 
 src_prepare() {
-	epatch "${FILESDIR}/${P}-buildsystem.patch"
-
-	sed -i -e '/^pkgincludedir=/s/xml/xmlpull/' src/xmlpull/Makefile.am || die
-	sed -i -e '/^pkginclude_HEADERS/s/$(schema_h_sources)/$(schema_h_sources) $(wsdl_cc_sources)/' src/wsdlparser/Makefile.am || die
+	eapply "${FILESDIR}/${P}-buildsystem.patch"
 
 	if ! use doc; then
 		sed -i -e '/SUBDIRS/s/docs //' Makefile.am || die
 	fi
 
+	mv configure.in configure.ac || die
 	rm -r config || die
-	autotools-utils_src_prepare
+
+	eapply_user
+	eautoreconf
+}
+
+src_configure() {
+	econf $(use_enable static-libs static)
+}
+
+src_install() {
+	default
+	find "${ED}" -name '*.la' -delete || die
 }
