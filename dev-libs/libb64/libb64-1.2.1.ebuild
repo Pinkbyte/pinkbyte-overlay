@@ -1,10 +1,9 @@
-# Copyright 1999-2013 Gentoo Foundation
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
 
-EAPI=5
+EAPI=8
 
-inherit eutils multilib toolchain-funcs
+inherit multilib toolchain-funcs
 
 DESCRIPTION="C/C++ routines for fast encoding/decoding data into and from a base64-encoded format"
 HOMEPAGE="http://libb64.sourceforge.net"
@@ -17,14 +16,16 @@ KEYWORDS="~amd64 ~x86"
 DEPEND="app-arch/unzip"
 RDEPEND=""
 
+#PATCHES=( "${FILESDIR}/${P}-build-shared-lib.patch" )
+
 src_prepare() {
 	# Respect compiler environment
 	tc-export CC CXX
 
 	# Build shared library instead of static
-	epatch "${FILESDIR}/${P}-build-shared-lib.patch"
+	eapply -p0 "${FILESDIR}/${P}-build-shared-lib.patch"
 
-	epatch_user
+	eapply_user
 }
 
 src_compile() {
