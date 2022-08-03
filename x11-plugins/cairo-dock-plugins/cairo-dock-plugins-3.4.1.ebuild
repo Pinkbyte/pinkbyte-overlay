@@ -1,9 +1,9 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-inherit cmake-utils eutils
+inherit cmake
 
 MY_PN="${PN/plugins/plug-ins}"
 MM_PV=$(ver_cut 1-2)
@@ -53,10 +53,10 @@ DEPEND="${RDEPEND}
 
 src_configure() {
 	local mycmakeargs=(
-		"-Denable-alsa-mixer=$(usex alsa)"
-		"-Denable-sound-effects=$(usex alsa)"
+		-Denable-alsa-mixer=$(usex alsa)
+		-Denable-sound-effects=$(usex alsa)
 		# broken with 0.99.x (as of cairo-dock 3.3.2)
-		"-Denable-upower-support=OFF"
+		-Denable-upower-support=OFF
 	)
-	cmake-utils_src_configure
+	cmake_src_configure
 }

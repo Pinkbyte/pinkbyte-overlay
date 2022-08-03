@@ -1,12 +1,12 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="6"
+EAPI=8
 
-inherit cmake-utils eutils versionator
+inherit cmake
 
 MY_PN="${PN}-core"
-MM_PV=$(get_version_component_range '1-2')
+MM_PV=$(ver_cut '1-2')
 
 DESCRIPTION="Cairo-dock is a fast, responsive, Mac OS X-like dock."
 HOMEPAGE="http://www.glx-dock.org"
@@ -15,7 +15,7 @@ SRC_URI="http://launchpad.net/${MY_PN}/${MM_PV}/${PV}/+download/${P}.tar.gz"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="crypt xcomposite desktop_manager gtk3"
+IUSE="crypt xcomposite desktop_manager"
 
 RDEPEND="
 	dev-libs/dbus-glib
@@ -26,10 +26,9 @@ RDEPEND="
 	sys-apps/dbus
 	x11-libs/cairo
 	x11-libs/pango
-	!gtk3? ( x11-libs/gtk+:2 )
 	x11-libs/gtkglext
 	x11-libs/libXrender
-	gtk3? ( x11-libs/gtk+:3 )
+	x11-libs/gtk+:3
 	crypt? ( sys-libs/glibc )
 	xcomposite? (
 		x11-libs/libXcomposite
@@ -43,12 +42,24 @@ DEPEND="${RDEPEND}
 	sys-devel/gettext
 "
 
+src_prepare() {
+	# We will install man files manually
+	sed -i -e '/add_subdirectory(man)/d' data/CMakeLists.txt || die
+
+	cmake_src_prepare
+}
+
 src_configure() {
-	mycmakeargs=(
-		`use gtk3 && echo "-Dforce-gtk2=OFF" || echo "-Dforce-gtk2=ON"`
-		`use desktop_manager && echo "-Denable-desktop-manager=ON" || echo "-Denable-desktop-manager=OFF"`
+	local mycmakeargs=(
+		$(use desktop_manager && echo "-Denable-desktop-manager=ON" || echo "-Denable-desktop-manager=OFF")
+		-DCMAKE_INSTALL_MANDIR="/usr/share/man/${PV}"
 	)
-	cmake-utils_src_configure
+	cmake_src_configure
+}
+
+src_install() {
+	newman data/man/cairo-dock_en.1 cairo-dock_en.1
+	cmake_src_install
 }
 
 pkg_postinst() {
