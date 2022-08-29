@@ -1,0 +1,29 @@
+--- a/CMakeLists.txt	2022-08-29 11:47:42.214319853 +0300
++++ b/CMakeLists.txt	2022-08-29 11:47:52.078319128 +0300
+@@ -1391,26 +1391,6 @@
+ configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Toons/data/Toons.conf.in ${CMAKE_CURRENT_BINARY_DIR}/Toons/data/Toons.conf)
+ add_subdirectory (Toons)
+ 
+-############# WEATHER #################
+-message (STATUS "> Weather:")
+-set (with_weather no)
+-set (WEATHER_MODULE openssl)
+-pkg_check_modules (WEATHER ${WEATHER_MODULE})
+-if (NOT WEATHER_FOUND)
+-	message (STATUS "Could not find ${WEATHER_MODULE}; Cairo-Dock won't be built with Weather applet.")
+-	message (WARNING "This module is required to compile Weather applet: ${WEATHER_MODULE}")
+-	set (MODULES_MISSING "${MODULES_MISSING} ${WEATHER_MODULE}")
+-else()
+-	set (GETTEXT_WEATHER ${GETTEXT_PLUGINS})
+-	set (VERSION_WEATHER "2.1.0")
+-	set (PACKAGE_WEATHER "cd-weather")
+-	set (weatherdatadir "${pluginsdatadir}/weather")
+-	set (weatheruserdirname "weather")
+-	configure_file (${CMAKE_CURRENT_SOURCE_DIR}/weather/data/weather.conf.in ${CMAKE_CURRENT_BINARY_DIR}/weather/data/weather.conf)
+-	add_subdirectory (weather)
+-	set (with_weather yes)
+-endif()
+-
+ ############# WEBLETS #################
+ message (STATUS "> Weblets:")
+ set (with_weblets no)
