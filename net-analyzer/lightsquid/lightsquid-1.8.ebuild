@@ -1,10 +1,10 @@
-# Copyright 1999-2021 Gentoo Foundation
+# Copyright 1999-2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=7
+EAPI=8
 
-inherit eutils systemd user
+inherit tmpfiles
 
 DESCRIPTION="Lite and fast log analyzer for Squid"
 HOMEPAGE="http://lightsquid.sourceforge.net/"
@@ -14,14 +14,11 @@ LICENSE="GPL-2+"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 
-RDEPEND="net-proxy/squid
+RDEPEND="acct-user/lightsquid
+	net-proxy/squid
 	dev-perl/GD[truetype]
 	dev-perl/CGI"
 DEPEND=""
-
-pkg_setup() {
-	enewuser lightsquid -1 -1 /var/lib/lightsquid squid
-}
 
 src_prepare() {
 	sed -i \
@@ -38,9 +35,9 @@ src_prepare() {
 		-e 's:common.pl:/usr/share/lightsquid/common.pl:' \
 		*.cgi || die
 
-	epatch "${FILESDIR}/${P}-path-fix.patch"
+	eapply "${FILESDIR}/${P}-path-fix.patch"
 
-	epatch_user
+	eapply_user
 }
 
 src_install() {
@@ -68,5 +65,9 @@ src_install() {
 	keepdir /var/lib/lightsquid
 	fowners lightsquid:squid /var/lib/lightsquid
 
-	systemd_dotmpfilesd "${FILESDIR}/${PN}.conf"
+	dotmpfiles "${FILESDIR}/${PN}.conf"
+}
+
+pkg_postinst() {
+	tmpfiles_process "${PN}.conf"
 }
