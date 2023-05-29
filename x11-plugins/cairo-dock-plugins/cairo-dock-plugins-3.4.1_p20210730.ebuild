@@ -15,7 +15,7 @@ SRC_URI="http://dev.gentoo.org/~pinkbyte/distfiles/snapshots/${P}.zip"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="alsa exif gmenu kde terminal gnote vala webkit xfce xgamma xklavier twitter indicator3 zeitgeist mail"
+IUSE="alsa exif gmenu terminal gnote vala webkit xfce xgamma xklavier twitter indicator3 zeitgeist mail"
 
 RDEPEND="
 	dev-libs/dbus-glib
@@ -30,7 +30,6 @@ RDEPEND="
 	alsa? ( media-libs/alsa-lib )
 	exif? ( media-libs/libexif )
 	gmenu? ( gnome-base/gnome-menus )
-	kde? ( kde-frameworks/kdelibs )
 	terminal? ( x11-libs/vte:= )
 	vala? ( dev-lang/vala:= )
 	webkit? ( >=net-libs/webkit-gtk-1.4.0:3 )
